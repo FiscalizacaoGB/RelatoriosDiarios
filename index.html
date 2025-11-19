@@ -191,4 +191,403 @@
   <!-- TELA REGISTRO DE OCORRÊNCIA -->
   <main id="main-ocorrencia" style="display:none;">
 
-    <section
+    <section class="card">
+      <h2>Registro de Ocorrência</h2>
+
+      <div class="row"><label>Fiscal</label><input id="oc_fiscal" readonly></div>
+      <div class="row"><label>Data</label><input id="oc_data" type="date"></div>
+    </section>
+
+    <section class="card">
+      <h3>Dados da Viagem</h3>
+
+      <div class="grid">
+        <div><label>De</label><select id="oc_de"></select></div>
+        <div><label>Para</label><select id="oc_para"></select></div>
+        <div><label>Horário</label><input id="oc_horario"></div>
+        <div><label>Nº Ordem</label><input id="oc_ordem"></div>
+        <div><label>Local Emb.</label><input id="oc_local"></div>
+        <div><label>Hora</label><input id="oc_hora"></div>
+        <div><label>Motorista</label><input id="oc_motorista"></div>
+        <div><label>Paxs</label><input id="oc_paxs" type="number"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Ocorrência</h3>
+
+      <div class="row" style="align-items:flex-start;">
+        <label>Descrição</label>
+        <textarea id="oc_texto" rows="6"
+        placeholder="Descreva a ocorrência detalhadamente..."></textarea>
+      </div>
+
+      <div class="row">
+        <label>Fotos</label>
+        <input id="oc_fotos" type="file" accept="image/*" multiple />
+      </div>
+
+      <button id="oc_print">Visualizar / Imprimir</button>
+    </section>
+
+  </main>
+
+  <footer><small>&copy; Sistema de Fiscalização</small></footer>
+</div>
+
+<!-- CONTAINER DA VISUALIZAÇÃO / IMPRESSÃO -->
+<div id="print-view" style="display:none;"></div>
+
+<script>
+/* ==========================
+   CONFIGURAÇÕES GERAIS
+========================== */
+
+const SHEETS_WEBAPP_URL =
+  "https://script.google.com/macros/s/AKfycbwhatv-MCyz5FT9fCQHNdj0MXKoVn62qne4tVcdfvPwfgIo27U_wLEC44axbUBrOQON/exec";
+
+const FISCAIS = [
+  { id: "Lucas", name: "Lucas Ribeiro", pin: "1993" },
+  { id: "Everton", name: "Everton", pin: "2025" },
+  { id: "Luciano", name: "Luciano", pin: "6060" },
+  { id: "Wellington", name: "Wellington", pin: "7070" },
+  { id: "Joseval", name: "Joseval", pin: "8080" }
+];
+
+const CODIGOS = {
+  "Camaçari":1,"Madre":2,"Candeias":3,"C.Feira":4,"Teodoro":5,"Acupe":6,
+  "Bom jesus":7,"Cabaceiras":8,"Cairu":9,"Camamu":10,"Maragojipe":11,
+  "Muritiba":12,"Oliveira":13,"São Félix":14,"Santo Amaro":15,"Valença":16,
+  "Alagoinhas":17,"Aramari":18,"Biritinga":19,"Catu":20,"Irará":21,
+  "Lagoa redonda":22,"Lustosa":23,"Pedrão":24,"Sátiro Dias":25,"Pojuca":26
+};
+
+const CIDADES = ["Salvador", ...Object.keys(CODIGOS)];
+
+/* ==========================
+   LOGIN
+========================== */
+
+document.getElementById("loginBtn").onclick = () => {
+  const id = document.getElementById("loginFiscal").value;
+  const pin = document.getElementById("loginPin").value;
+
+  const user = FISCAIS.find(f => f.id === id);
+  if (!user) return alert("Selecione um fiscal.");
+  if (user.pin !== pin) return alert("PIN incorreto!");
+
+  localStorage.setItem("fiscalId", user.id);
+  iniciarApp(user);
+};
+
+function iniciarApp(user) {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  document.getElementById("fiscal").value = user.name;
+  document.getElementById("oc_fiscal").value = user.name;
+
+  document.getElementById("data").valueAsDate = new Date();
+  document.getElementById("oc_data").valueAsDate = new Date();
+
+  preencherSelects();
+}
+
+/* Auto login */
+const saved = localStorage.getItem("fiscalId");
+if (saved) {
+  const user = FISCAIS.find(f => f.id === saved);
+  if (user) iniciarApp(user);
+}
+
+/* ==========================
+   POPULAR SELECTS
+========================== */
+
+function preencherSelects() {
+  ["de","para","oc_de","oc_para"].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    CIDADES.forEach(c => {
+      const op = document.createElement("option");
+      op.value = op.text = c;
+      sel.appendChild(op);
+    });
+  });
+
+  document.getElementById("de").value = "Salvador";
+  document.getElementById("para").value = "Camaçari";
+
+  document.getElementById("oc_de").value = "Salvador";
+  document.getElementById("oc_para").value = "Camaçari";
+}
+
+/* ==========================
+   RELATÓRIO DIÁRIO
+========================== */
+
+let linhas = [];
+
+function getCod(c) { return CODIGOS[c] || ""; }
+function getLinha(de, para) { return getCod(de) || getCod(para); }
+
+document.getElementById("add").onclick = () => {
+  const l = {
+    De: document.getElementById("de").value,
+    Para: document.getElementById("para").value,
+    Horário: document.getElementById("horario").value,
+    Ordem: document.getElementById("ordem").value,
+    Local: document.getElementById("local").value,
+    Hora: document.getElementById("hora").value,
+    Motorista: document.getElementById("motorista").value,
+    Paxs: document.getElementById("paxs").value
+  };
+  linhas.unshift(l);
+  render();
+};
+
+function render() {
+  const tbody = document.getElementById("tabela");
+  tbody.innerHTML = "";
+  linhas.forEach((l,i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${l.De}</td>
+      <td>${l.Para}</td>
+      <td>${getCod(l.De)}</td>
+      <td>${getCod(l.Para)}</td>
+      <td>${l.Horário}</td>
+      <td>${l.Ordem}</td>
+      <td>${l.Local}</td>
+      <td>${l.Hora}</td>
+      <td>${l.Motorista}</td>
+      <td>${l.Paxs}</td>
+      <td>${getLinha(l.De,l.Para)}</td>
+      <td>
+        <button class="edit">Editar</button>
+        <button class="delete">Del</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    tr.querySelector(".delete").onclick = () => { linhas.splice(i,1); render(); };
+    tr.querySelector(".edit").onclick = () => {
+      ["De","Para","Horário","Ordem","Local","Hora","Motorista","Paxs"].forEach(campo => {
+        document.getElementById(campo.toLowerCase()).value = l[campo];
+      });
+      linhas.splice(i,1); render();
+    };
+  });
+  document.getElementById("count").textContent = linhas.length;
+}
+
+/* ==========================
+   CSV
+========================== */
+
+document.getElementById("export").onclick = () => {
+  let out = "De;Para;Horario;Ordem;Local;Hora;Motorista;Paxs;Linha;Fiscal;Data\n";
+  const fiscal = document.getElementById("fiscal").value;
+  const data = document.getElementById("data").value;
+
+  linhas.forEach(l => {
+    out += [
+      l.De,l.Para,l.Horário,l.Ordem,l.Local,l.Hora,l.Motorista,l.Paxs,
+      getLinha(l.De,l.Para),
+      fiscal, data
+    ].join(";") + "\n";
+  });
+
+  const blob = new Blob([out], { type:"text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "relatorio_diario.csv";
+  a.click();
+};
+
+/* ==========================
+   SALVAR NO SHEETS
+========================== */
+
+document.getElementById("saveSheets").onclick = () => {
+  if (!linhas.length) return alert("Nenhuma linha adicionada.");
+
+  const fiscal = document.getElementById("fiscal").value;
+  const data = document.getElementById("data").value;
+
+  const rows = linhas.map(l => ([
+    l.De,l.Para,l.Horário,l.Ordem,l.Local,l.Hora,l.Motorista,l.Paxs,
+    getLinha(l.De,l.Para), fiscal, data
+  ]));
+
+  fetch(SHEETS_WEBAPP_URL, {
+    method: "POST",
+    headers: {"Content-Type":"text/plain"},
+    body: JSON.stringify({ rows })
+  })
+  .then(r=>r.text())
+  .then(t=>{
+    try {
+      const j = JSON.parse(t);
+      if (j.status==="ok") alert("Enviado com sucesso!");
+      else alert("Erro: "+t);
+    } catch {
+      alert("Resposta inesperada: "+t);
+    }
+  });
+};
+
+/* ==========================
+   TABS
+========================== */
+
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    btn.classList.add("active");
+
+    const alvo = btn.dataset.target;
+
+    document.getElementById("main-diario").style.display =
+      (alvo === "diario" ? "block" : "none");
+
+    document.getElementById("main-ocorrencia").style.display =
+      (alvo === "ocorrencia" ? "block" : "none");
+  };
+});
+
+/* ==========================
+   VISUALIZAR / IMPRIMIR OCORRÊNCIA
+========================== */
+
+document.getElementById("oc_print").onclick = async () => {
+
+  const fiscal = document.getElementById("oc_fiscal").value;
+  const data = document.getElementById("oc_data").value.split("-").reverse().join("/");
+
+  const de = document.getElementById("oc_de").value;
+  const para = document.getElementById("oc_para").value;
+  const horario = document.getElementById("oc_horario").value;
+  const ordem = document.getElementById("oc_ordem").value;
+  const localEmb = document.getElementById("oc_local").value;
+  const hora = document.getElementById("oc_hora").value;
+  const motorista = document.getElementById("oc_motorista").value;
+  const paxs = document.getElementById("oc_paxs").value;
+  const texto = document.getElementById("oc_texto").value;
+
+  // Lê as fotos (se houver) e converte para dataURL
+  const fotosInput = document.getElementById("oc_fotos");
+  let imagens = [];
+  if (fotosInput.files && fotosInput.files.length) {
+    imagens = await Promise.all(
+      Array.from(fotosInput.files).map(file =>
+        new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        })
+      )
+    );
+  }
+
+  const imagensHTML = imagens
+    .map(src => `<img src="${src}" style="max-width:100%; margin-top:8px; display:block;">`)
+    .join("");
+
+  const fotosSection = imagens.length
+    ? `
+      <h2>Fotos da Ocorrência</h2>
+      <div class="fotos">
+        ${imagensHTML}
+      </div>
+    `
+    : "";
+
+  const printView = document.getElementById("print-view");
+  const app = document.getElementById("app");
+  const login = document.getElementById("login-screen");
+
+  // monta o HTML interno da visualização
+  printView.innerHTML = `
+    <style>
+      body { font-family: Arial, sans-serif; }
+      h1 { font-size: 20px; margin-bottom: 8px; }
+      h2 { font-size: 16px; margin-top: 16px; margin-bottom: 8px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+      th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 13px; text-align:left; }
+      th.label-col { width: 140px; white-space:nowrap; }
+      .bloco { margin-top: 12px; text-align: justify; }
+      .assinatura { margin-top: 40px; }
+      .assinatura span { border-top:1px solid #000; padding-top:4px; display:inline-block; }
+      .top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+      .top-bar img { height:48px; }
+      .acoes { margin-top:16px; }
+      .acoes button { padding:6px 10px; margin-right:8px; }
+    </style>
+
+    <div class="top-bar">
+      <h1>Registro de Ocorrência - Fiscalização</h1>
+      <img src="logo.png" alt="Cidade Sol" />
+    </div>
+    <div><strong>Fiscal:</strong> ${fiscal}</div>
+    <div><strong>Data:</strong> ${data}</div>
+
+    <h2>Dados da Viagem</h2>
+    <table>
+      <tr><th class="label-col">De</th><td>${de}</td></tr>
+      <tr><th class="label-col">Para</th><td>${para}</td></tr>
+      <tr><th class="label-col">Horário</th><td>${horario}</td></tr>
+      <tr><th class="label-col">Nº de Ordem</th><td>${ordem}</td></tr>
+      <tr><th class="label-col">Local Embarque</th><td>${localEmb}</td></tr>
+      <tr><th class="label-col">Hora</th><td>${hora}</td></tr>
+      <tr><th class="label-col">Motorista</th><td>${motorista}</td></tr>
+      <tr><th class="label-col">Qtd. Paxs</th><td>${paxs}</td></tr>
+    </table>
+
+    <h2>Descrição da Ocorrência</h2>
+    <div class="bloco">
+      ${texto.replace(/\n/g, "<br>")}
+    </div>
+
+    ${fotosSection}
+
+    <div class="assinatura">
+      <span>${fiscal}</span><br/>
+      <small>Fiscal</small>
+    </div>
+
+    <div class="acoes no-print">
+      <button id="btnVoltar">Voltar</button>
+      <button id="btnImprimir">Imprimir</button>
+    </div>
+  `;
+
+  // mostra visualização, esconde app
+  login.style.display = "none";
+  app.style.display = "none";
+  printView.style.display = "block";
+
+  // botões da visualização
+  document.getElementById("btnVoltar").onclick = () => {
+    printView.style.display = "none";
+    app.style.display = "block";
+  };
+
+  document.getElementById("btnImprimir").onclick = () => {
+    window.print();
+  };
+};
+
+/* ==========================
+   SERVICE WORKER
+========================== */
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
+}
+</script>
+
+</body>
+</html>
