@@ -452,7 +452,7 @@ document.querySelectorAll(".tab").forEach(btn => {
    VISUALIZAR / IMPRIMIR OCORRÊNCIA
 ========================== */
 
-document.getElementById("oc_print").onclick = () => {
+document.getElementById("oc_print").onclick = async () => {
 
   const fiscal = document.getElementById("oc_fiscal").value;
   const data = document.getElementById("oc_data").value.split("-").reverse().join("/");
@@ -467,6 +467,34 @@ document.getElementById("oc_print").onclick = () => {
   const paxs = document.getElementById("oc_paxs").value;
   const texto = document.getElementById("oc_texto").value;
 
+  // Lê as fotos (se houver) e converte para dataURL
+  const fotosInput = document.getElementById("oc_fotos");
+  let imagens = [];
+  if (fotosInput.files && fotosInput.files.length) {
+    imagens = await Promise.all(
+      Array.from(fotosInput.files).map(file =>
+        new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        })
+      )
+    );
+  }
+
+  const imagensHTML = imagens
+    .map(src => `<img src="${src}" style="max-width:100%; margin-top:8px; display:block;">`)
+    .join("");
+
+  const fotosSection = imagens.length
+    ? `
+      <h2>Fotos da Ocorrência</h2>
+      <div class="fotos">
+        ${imagensHTML}
+      </div>
+    `
+    : "";
+
   const novaJanela = window.open("", "_blank");
 
   novaJanela.document.write(`
@@ -479,34 +507,41 @@ document.getElementById("oc_print").onclick = () => {
           h1 { font-size: 20px; margin-bottom: 8px; }
           h2 { font-size: 16px; margin-top: 16px; margin-bottom: 8px; }
           table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-          th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 13px; }
-          .bloco { margin-top: 12px; }
-          .label { font-weight: bold; }
+          th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 13px; text-align:left; }
+          th.label-col { width: 140px; white-space:nowrap; }
+          .bloco { margin-top: 12px; text-align: justify; }
           .assinatura { margin-top: 40px; }
           .assinatura span { border-top:1px solid #000; padding-top:4px; display:inline-block; }
+          .top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+          .top-bar img { height:48px; }
         </style>
       </head>
       <body>
-        <h1>Registro de Ocorrência - Fiscalização</h1>
-        <div><span class="label">Fiscal:</span> ${fiscal}</div>
-        <div><span class="label">Data:</span> ${data}</div>
+        <div class="top-bar">
+          <h1>Registro de Ocorrência - Fiscalização</h1>
+          <img src="/logo.png" alt="Cidade Sol" />
+        </div>
+        <div><strong>Fiscal:</strong> ${fiscal}</div>
+        <div><strong>Data:</strong> ${data}</div>
 
         <h2>Dados da Viagem</h2>
         <table>
-          <tr><th>De</th><td>${de}</td></tr>
-          <tr><th>Para</th><td>${para}</td></tr>
-          <tr><th>Horário</th><td>${horario}</td></tr>
-          <tr><th>Nº de Ordem</th><td>${ordem}</td></tr>
-          <tr><th>Local Embarque</th><td>${localEmb}</td></tr>
-          <tr><th>Hora</th><td>${hora}</td></tr>
-          <tr><th>Motorista</th><td>${motorista}</td></tr>
-          <tr><th>Qtd. Paxs</th><td>${paxs}</td></tr>
+          <tr><th class="label-col">De</th><td>${de}</td></tr>
+          <tr><th class="label-col">Para</th><td>${para}</td></tr>
+          <tr><th class="label-col">Horário</th><td>${horario}</td></tr>
+          <tr><th class="label-col">Nº de Ordem</th><td>${ordem}</td></tr>
+          <tr><th class="label-col">Local Embarque</th><td>${localEmb}</td></tr>
+          <tr><th class="label-col">Hora</th><td>${hora}</td></tr>
+          <tr><th class="label-col">Motorista</th><td>${motorista}</td></tr>
+          <tr><th class="label-col">Qtd. Paxs</th><td>${paxs}</td></tr>
         </table>
 
         <h2>Descrição da Ocorrência</h2>
         <div class="bloco">
           ${texto.replace(/\n/g, "<br>")}
         </div>
+
+        ${fotosSection}
 
         <div class="assinatura">
           <span>${fiscal}</span><br/>
