@@ -24,7 +24,7 @@
     h1 { margin:0; font-size:20px; }
 
     /* Tabs */
-    .tabs { margin-top:8px; display:flex; gap:8px; }
+    .tabs { margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
     .tab {
       background:transparent; border:none; padding:8px 12px;
       color:#e5e7eb; cursor:pointer; font-size:14px;
@@ -63,7 +63,7 @@
     }
 
     .badge { background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius:999px; font-size:12px; }
-    .list-header { display:flex; justify-content:space-between; align-items:center; }
+    .list-header { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
     .delete { color:#b91c1c; border-color:#fecaca; }
     .edit   { color:#1d4ed8; border-color:#bfdbfe; }
 
@@ -78,7 +78,7 @@
     .login-logo-wrapper { display:flex; justify-content:center; margin-bottom:12px; }
     .login-logo { height:64px; }
 
-    /* PRINT VIEW: só aparece no modo de visualização do relatório */
+    /* PRINT VIEW */
     #print-view { padding:24px; max-width:900px; margin:0 auto; }
     @media print {
       body { background:#fff; }
@@ -130,6 +130,7 @@
     <nav class="tabs">
       <button class="tab active" data-target="diario">Relatório Diário</button>
       <button class="tab" data-target="ocorrencia">Registro de Ocorrência</button>
+      <button class="tab" data-target="os">OS - Manutenção</button>
     </nav>
   </header>
 
@@ -232,6 +233,66 @@
 
   </main>
 
+  <!-- TELA OS - MANUTENÇÃO -->
+  <main id="main-os" style="display:none;">
+
+    <section class="card">
+      <h2>OS - Manutenção</h2>
+
+      <div class="grid">
+        <div>
+          <label>Data</label>
+          <input id="os_data" type="date" />
+        </div>
+        <div>
+          <label>Fiscal</label>
+          <input id="os_fiscal" readonly />
+        </div>
+        <div>
+          <label>Nº de ordem</label>
+          <input id="os_ordem" />
+        </div>
+        <div>
+          <label>Nº da OS</label>
+          <input id="os_numero" />
+        </div>
+      </div>
+
+      <div class="row" style="align-items:flex-start;">
+        <label>Observação</label>
+        <textarea id="os_obs" rows="3" style="resize:vertical;"></textarea>
+      </div>
+
+      <button id="os_add">Adicionar OS</button>
+    </section>
+
+    <section class="card">
+      <div class="list-header">
+        <h2>OS cadastradas</h2>
+        <span id="os_count" class="badge">0</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Fiscal</th>
+            <th>Nº de ordem</th>
+            <th>Observação</th>
+            <th>Nº da OS</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="os_tabela"></tbody>
+      </table>
+
+      <div class="row">
+        <button id="os_saveSheets">Salvar no Banco</button>
+      </div>
+    </section>
+
+  </main>
+
   <footer><small>&copy; Sistema de Fiscalização</small></footer>
 </div>
 
@@ -245,6 +306,9 @@
 
 const SHEETS_WEBAPP_URL =
   "https://script.google.com/macros/s/AKfycbwhatv-MCyz5FT9fCQHNdj0MXKoVn62qne4tVcdfvPwfgIo27U_wLEC44axbUBrOQON/exec";
+
+/* 👉 Trocar abaixo pelo WebApp ligado à planilha de OS que você passou no link */
+const OS_SHEETS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwZJpiXD1Z7K-isBK0AprRDyPTwQ7_bczcLg5_wCWaZ-R86XViMlXx4aCyEyGaMM_Mh/exec";
 
 const FISCAIS = [
   { id: "Lucas", name: "Lucas Ribeiro", pin: "1993" },
@@ -286,9 +350,12 @@ function iniciarApp(user) {
 
   document.getElementById("fiscal").value = user.name;
   document.getElementById("oc_fiscal").value = user.name;
+  document.getElementById("os_fiscal").value = user.name;
 
-  document.getElementById("data").valueAsDate = new Date();
-  document.getElementById("oc_data").valueAsDate = new Date();
+  const hoje = new Date();
+  document.getElementById("data").valueAsDate = hoje;
+  document.getElementById("oc_data").valueAsDate = hoje;
+  document.getElementById("os_data").valueAsDate = hoje;
 
   preencherSelects();
 }
@@ -408,7 +475,7 @@ document.getElementById("export").onclick = () => {
 };
 
 /* ==========================
-   SALVAR NO SHEETS
+   SALVAR NO SHEETS (RELATÓRIO DIÁRIO)
 ========================== */
 
 document.getElementById("saveSheets").onclick = () => {
@@ -440,6 +507,97 @@ document.getElementById("saveSheets").onclick = () => {
 };
 
 /* ==========================
+   OS - MANUTENÇÃO
+========================== */
+
+let oss = [];
+
+document.getElementById("os_add").onclick = () => {
+  const os = {
+    Data: document.getElementById("os_data").value,
+    Fiscal: document.getElementById("os_fiscal").value,
+    Ordem: document.getElementById("os_ordem").value,
+    Obs: document.getElementById("os_obs").value,
+    Numero: document.getElementById("os_numero").value
+  };
+
+  if (!os.Data || !os.Ordem || !os.Numero) {
+    if (!confirm("Existem campos importantes em branco. Deseja adicionar assim mesmo?")) {
+      return;
+    }
+  }
+
+  oss.unshift(os);
+  renderOS();
+
+  document.getElementById("os_ordem").value = "";
+  document.getElementById("os_obs").value = "";
+  document.getElementById("os_numero").value = "";
+};
+
+function renderOS() {
+  const tbody = document.getElementById("os_tabela");
+  tbody.innerHTML = "";
+
+  oss.forEach((os, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${os.Data}</td>
+      <td>${os.Fiscal}</td>
+      <td>${os.Ordem}</td>
+      <td style="white-space:normal; max-width:300px;">${os.Obs}</td>
+      <td>${os.Numero}</td>
+      <td>
+        <button class="edit">Editar</button>
+        <button class="delete">Del</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    tr.querySelector(".delete").onclick = () => { oss.splice(i,1); renderOS(); };
+    tr.querySelector(".edit").onclick = () => {
+      document.getElementById("os_data").value = os.Data;
+      document.getElementById("os_fiscal").value = os.Fiscal;
+      document.getElementById("os_ordem").value = os.Ordem;
+      document.getElementById("os_obs").value = os.Obs;
+      document.getElementById("os_numero").value = os.Numero;
+      oss.splice(i,1);
+      renderOS();
+    };
+  });
+
+  document.getElementById("os_count").textContent = oss.length;
+}
+
+document.getElementById("os_saveSheets").onclick = () => {
+  if (!oss.length) return alert("Nenhuma OS adicionada.");
+
+  const rows = oss.map(os => ([
+    os.Data,
+    os.Fiscal,
+    os.Ordem,
+    os.Obs,
+    os.Numero
+  ]));
+
+  fetch(OS_SHEETS_WEBAPP_URL, {
+    method: "POST",
+    headers: {"Content-Type":"text/plain"},
+    body: JSON.stringify({ rows })
+  })
+  .then(r => r.text())
+  .then(t => {
+    try {
+      const j = JSON.parse(t);
+      if (j.status === "ok") alert("OS enviadas com sucesso!");
+      else alert("Erro ao enviar OS: " + t);
+    } catch {
+      alert("Resposta inesperada ao enviar OS: " + t);
+    }
+  });
+};
+
+/* ==========================
    TABS
 ========================== */
 
@@ -455,6 +613,9 @@ document.querySelectorAll(".tab").forEach(btn => {
 
     document.getElementById("main-ocorrencia").style.display =
       (alvo === "ocorrencia" ? "block" : "none");
+
+    document.getElementById("main-os").style.display =
+      (alvo === "os" ? "block" : "none");
   };
 });
 
@@ -509,7 +670,6 @@ document.getElementById("oc_print").onclick = async () => {
   const app = document.getElementById("app");
   const login = document.getElementById("login-screen");
 
-  // monta o HTML interno da visualização
   printView.innerHTML = `
     <style>
       body { font-family: Arial, sans-serif; }
@@ -525,6 +685,9 @@ document.getElementById("oc_print").onclick = async () => {
       .top-bar img { height:48px; }
       .acoes { margin-top:16px; }
       .acoes button { padding:6px 10px; margin-right:8px; }
+      @media print {
+        .acoes { display:none; }
+      }
     </style>
 
     <div class="top-bar">
@@ -558,7 +721,7 @@ document.getElementById("oc_print").onclick = async () => {
       <small>Fiscal</small>
     </div>
 
-    <div class="acoes no-print">
+    <div class="acoes">
       <button id="btnVoltar">Voltar</button>
       <button id="btnImprimir">Imprimir</button>
     </div>
@@ -566,13 +729,15 @@ document.getElementById("oc_print").onclick = async () => {
 
   // mostra visualização, esconde app
   login.style.display = "none";
-  app.style.display = "none";
+  app.style.display = "block"; // continua visível, mas escondido via CSS na impressão
+  document.getElementById("main-diario").style.display = "none";
+  document.getElementById("main-ocorrencia").style.display = "none";
+  document.getElementById("main-os").style.display = "none";
   printView.style.display = "block";
 
-  // botões da visualização
   document.getElementById("btnVoltar").onclick = () => {
     printView.style.display = "none";
-    app.style.display = "block";
+    document.querySelector('[data-target="ocorrencia"]').click();
   };
 
   document.getElementById("btnImprimir").onclick = () => {
