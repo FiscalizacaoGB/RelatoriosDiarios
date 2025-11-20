@@ -276,6 +276,7 @@
             <th>Fiscal</th>
             <th>Nº de ordem</th>
             <th>Observação</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody id="os_tabela"></tbody>
@@ -531,15 +532,33 @@ function renderOS() {
   const tbody = document.getElementById("os_tabela");
   tbody.innerHTML = "";
 
-  oss.forEach(os => {
+  oss.forEach((os, i) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${os.Data}</td>
       <td>${os.Fiscal}</td>
       <td>${os.Ordem}</td>
       <td style="white-space:normal; max-width:300px;">${os.Obs}</td>
+      <td>
+        <button class="edit">Editar</button>
+        <button class="delete">Del</button>
+      </td>
     `;
     tbody.appendChild(tr);
+
+    tr.querySelector(".delete").onclick = () => {
+      oss.splice(i,1);
+      renderOS();
+    };
+
+    tr.querySelector(".edit").onclick = () => {
+      document.getElementById("os_data").value = os.Data;
+      document.getElementById("os_fiscal").value = os.Fiscal;
+      document.getElementById("os_ordem").value = os.Ordem;
+      document.getElementById("os_obs").value = os.Obs;
+      oss.splice(i,1);
+      renderOS();
+    };
   });
 
   document.getElementById("os_count").textContent = oss.length;
@@ -601,9 +620,8 @@ document.querySelectorAll(".tab").forEach(btn => {
 document.getElementById("oc_print").onclick = async () => {
 
   const fiscal = document.getElementById("oc_fiscal").value;
-  const data = document.getElementById("oc_data").value
-    ? document.getElementById("oc_data").value.split("-").reverse().join("/")
-    : "";
+  const dataValue = document.getElementById("oc_data").value;
+  const data = dataValue ? dataValue.split("-").reverse().join("/") : "";
 
   const de = document.getElementById("oc_de").value;
   const para = document.getElementById("oc_para").value;
