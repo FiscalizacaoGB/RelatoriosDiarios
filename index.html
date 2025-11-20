@@ -78,8 +78,9 @@
     .login-logo-wrapper { display:flex; justify-content:center; margin-bottom:12px; }
     .login-logo { height:64px; }
 
-    /* PRINT VIEW */
+    /* PRINT VIEW CONTAINER */
     #print-view { padding:24px; max-width:900px; margin:0 auto; }
+
     @media print {
       body { background:#fff; }
       #login-screen, #app { display:none !important; }
@@ -234,132 +235,61 @@
   </main>
 
   <!-- TELA OS - MANUTENÇÃO -->
-<!-- TELA OS - MANUTENÇÃO -->
-<main id="main-os" style="display:none;">
+  <main id="main-os" style="display:none;">
 
-  <section class="card">
-    <h2>OS - Manutenção</h2>
+    <section class="card">
+      <h2>OS - Manutenção</h2>
 
-    <div class="grid">
-      <div>
-        <label>Data</label>
-        <input id="os_data" type="date" />
+      <div class="grid">
+        <div>
+          <label>Data</label>
+          <input id="os_data" type="date" />
+        </div>
+        <div>
+          <label>Fiscal</label>
+          <input id="os_fiscal" readonly />
+        </div>
+        <div>
+          <label>Nº de ordem</label>
+          <input id="os_ordem" />
+        </div>
       </div>
-      <div>
-        <label>Fiscal</label>
-        <input id="os_fiscal" readonly />
+
+      <div class="row" style="align-items:flex-start;">
+        <label>Observação</label>
+        <textarea id="os_obs" rows="3" style="resize:vertical;"></textarea>
       </div>
-      <div>
-        <label>Nº de ordem</label>
-        <input id="os_ordem" />
+
+      <button id="os_add">Adicionar OS</button>
+    </section>
+
+    <section class="card">
+      <div class="list-header">
+        <h2>OS cadastradas</h2>
+        <span id="os_count" class="badge">0</span>
       </div>
-    </div>
 
-    <div class="row" style="align-items:flex-start;">
-      <label>Observação</label>
-      <textarea id="os_obs" rows="3" style="resize:vertical;"></textarea>
-    </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Fiscal</th>
+            <th>Nº de ordem</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody id="os_tabela"></tbody>
+      </table>
 
-    <button id="os_add">Adicionar OS</button>
-  </section>
+      <div class="row">
+        <button id="os_saveSheets">Salvar no Banco</button>
+      </div>
+    </section>
 
-  <section class="card">
-    <div class="list-header">
-      <h2>OS cadastradas</h2>
-      <span id="os_count" class="badge">0</span>
-    </div>
+  </main>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Fiscal</th>
-          <th>Nº de ordem</th>
-          <th>Observação</th>
-        </tr>
-      </thead>
-      <tbody id="os_tabela"></tbody>
-    </table>
-
-    <div class="row">
-      <button id="os_saveSheets">Salvar no Banco</button>
-    </div>
-  </section>
-</main>
-
-<script>
-/* ==========================
-   OS - MANUTENÇÃO
-========================== */
-
-let oss = [];
-
-document.getElementById("os_add").onclick = () => {
-  const os = {
-    Data: document.getElementById("os_data").value,
-    Fiscal: document.getElementById("os_fiscal").value,
-    Ordem: document.getElementById("os_ordem").value,
-    Obs: document.getElementById("os_obs").value
-  };
-
-  if (!os.Data || !os.Ordem) {
-    alert("Preencha pelo menos Data e Nº de Ordem.");
-    return;
-  }
-
-  oss.unshift(os);
-  renderOS();
-
-  // limpa campos
-  document.getElementById("os_ordem").value = "";
-  document.getElementById("os_obs").value = "";
-};
-
-function renderOS() {
-  const tbody = document.getElementById("os_tabela");
-  tbody.innerHTML = "";
-
-  oss.forEach(os => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${os.Data}</td>
-      <td>${os.Fiscal}</td>
-      <td>${os.Ordem}</td>
-      <td style="white-space:normal; max-width:300px;">${os.Obs}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  document.getElementById("os_count").textContent = oss.length;
-}
-
-document.getElementById("os_saveSheets").onclick = () => {
-  if (!oss.length) return alert("Nenhuma OS adicionada.");
-
-  const rows = oss.map(os => ([
-    os.Data,
-    os.Fiscal,
-    os.Ordem,
-    os.Obs
-  ]));
-
-  fetch(OS_SHEETS_WEBAPP_URL, {
-    method: "POST",
-    headers: {"Content-Type":"text/plain"},
-    body: JSON.stringify({ rows })
-  })
-  .then(r => r.text())
-  .then(t => {
-    try {
-      const j = JSON.parse(t);
-      if (j.status === "ok") alert("OS enviadas com sucesso!");
-      else alert("Erro ao enviar OS: " + t);
-    } catch {
-      alert("Resposta inesperada ao enviar OS: " + t);
-    }
-  });
-};
-</script>
+  <footer><small>&copy; Sistema de Fiscalização</small></footer>
+</div>
 
 <!-- CONTAINER DA VISUALIZAÇÃO / IMPRESSÃO -->
 <div id="print-view" style="display:none;"></div>
@@ -372,8 +302,8 @@ document.getElementById("os_saveSheets").onclick = () => {
 const SHEETS_WEBAPP_URL =
   "https://script.google.com/macros/s/AKfycbwhatv-MCyz5FT9fCQHNdj0MXKoVn62qne4tVcdfvPwfgIo27U_wLEC44axbUBrOQON/exec";
 
-/* 👉 Trocar abaixo pelo WebApp ligado à planilha de OS que você passou no link */
-const OS_SHEETS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwZJpiXD1Z7K-isBK0AprRDyPTwQ7_bczcLg5_wCWaZ-R86XViMlXx4aCyEyGaMM_Mh/exec";
+const OS_SHEETS_WEBAPP_URL =
+  "https://script.google.com/macros/s/AKfycbwZJpiXD1Z7K-isBK0AprRDyPTwQ7_bczcLg5_wCWaZ-R86XViMlXx4aCyEyGaMM_Mh/exec";
 
 const FISCAIS = [
   { id: "Lucas", name: "Lucas Ribeiro", pin: "1993" },
@@ -582,14 +512,12 @@ document.getElementById("os_add").onclick = () => {
     Data: document.getElementById("os_data").value,
     Fiscal: document.getElementById("os_fiscal").value,
     Ordem: document.getElementById("os_ordem").value,
-    Obs: document.getElementById("os_obs").value,
-    Numero: document.getElementById("os_numero").value
+    Obs: document.getElementById("os_obs").value
   };
 
-  if (!os.Data || !os.Ordem || !os.Numero) {
-    if (!confirm("Existem campos importantes em branco. Deseja adicionar assim mesmo?")) {
-      return;
-    }
+  if (!os.Data || !os.Ordem) {
+    alert("Preencha pelo menos Data e Nº de Ordem.");
+    return;
   }
 
   oss.unshift(os);
@@ -597,38 +525,21 @@ document.getElementById("os_add").onclick = () => {
 
   document.getElementById("os_ordem").value = "";
   document.getElementById("os_obs").value = "";
-  document.getElementById("os_numero").value = "";
 };
 
 function renderOS() {
   const tbody = document.getElementById("os_tabela");
   tbody.innerHTML = "";
 
-  oss.forEach((os, i) => {
+  oss.forEach(os => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${os.Data}</td>
       <td>${os.Fiscal}</td>
       <td>${os.Ordem}</td>
       <td style="white-space:normal; max-width:300px;">${os.Obs}</td>
-      <td>${os.Numero}</td>
-      <td>
-        <button class="edit">Editar</button>
-        <button class="delete">Del</button>
-      </td>
     `;
     tbody.appendChild(tr);
-
-    tr.querySelector(".delete").onclick = () => { oss.splice(i,1); renderOS(); };
-    tr.querySelector(".edit").onclick = () => {
-      document.getElementById("os_data").value = os.Data;
-      document.getElementById("os_fiscal").value = os.Fiscal;
-      document.getElementById("os_ordem").value = os.Ordem;
-      document.getElementById("os_obs").value = os.Obs;
-      document.getElementById("os_numero").value = os.Numero;
-      oss.splice(i,1);
-      renderOS();
-    };
   });
 
   document.getElementById("os_count").textContent = oss.length;
@@ -641,8 +552,7 @@ document.getElementById("os_saveSheets").onclick = () => {
     os.Data,
     os.Fiscal,
     os.Ordem,
-    os.Obs,
-    os.Numero
+    os.Obs
   ]));
 
   fetch(OS_SHEETS_WEBAPP_URL, {
@@ -691,7 +601,9 @@ document.querySelectorAll(".tab").forEach(btn => {
 document.getElementById("oc_print").onclick = async () => {
 
   const fiscal = document.getElementById("oc_fiscal").value;
-  const data = document.getElementById("oc_data").value.split("-").reverse().join("/");
+  const data = document.getElementById("oc_data").value
+    ? document.getElementById("oc_data").value.split("-").reverse().join("/")
+    : "";
 
   const de = document.getElementById("oc_de").value;
   const para = document.getElementById("oc_para").value;
@@ -732,8 +644,7 @@ document.getElementById("oc_print").onclick = async () => {
     : "";
 
   const printView = document.getElementById("print-view");
-  const app = document.getElementById("app");
-  const login = document.getElementById("login-screen");
+  printView.style.display = "block";
 
   printView.innerHTML = `
     <style>
@@ -792,17 +703,9 @@ document.getElementById("oc_print").onclick = async () => {
     </div>
   `;
 
-  // mostra visualização, esconde app
-  login.style.display = "none";
-  app.style.display = "block"; // continua visível, mas escondido via CSS na impressão
-  document.getElementById("main-diario").style.display = "none";
-  document.getElementById("main-ocorrencia").style.display = "none";
-  document.getElementById("main-os").style.display = "none";
-  printView.style.display = "block";
-
   document.getElementById("btnVoltar").onclick = () => {
     printView.style.display = "none";
-    document.querySelector('[data-target="ocorrencia"]').click();
+    printView.innerHTML = "";
   };
 
   document.getElementById("btnImprimir").onclick = () => {
