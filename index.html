@@ -234,62 +234,132 @@
   </main>
 
   <!-- TELA OS - MANUTENÇÃO -->
-  <main id="main-os" style="display:none;">
+<!-- TELA OS - MANUTENÇÃO -->
+<main id="main-os" style="display:none;">
 
-    <section class="card">
-      <h2>OS - Manutenção</h2>
+  <section class="card">
+    <h2>OS - Manutenção</h2>
 
-      <div class="grid">
-        <div>
-          <label>Data</label>
-          <input id="os_data" type="date" />
-        </div>
-        <div>
-          <label>Fiscal</label>
-          <input id="os_fiscal" readonly />
-        </div>
-        <div>
-          <label>Nº de ordem</label>
-          <input id="os_ordem" />
-        </div>
+    <div class="grid">
+      <div>
+        <label>Data</label>
+        <input id="os_data" type="date" />
       </div>
-
-      <div class="row" style="align-items:flex-start;">
-        <label>Observação</label>
-        <textarea id="os_obs" rows="3" style="resize:vertical;"></textarea>
+      <div>
+        <label>Fiscal</label>
+        <input id="os_fiscal" readonly />
       </div>
-
-      <button id="os_add">Adicionar OS</button>
-    </section>
-
-    <section class="card">
-      <div class="list-header">
-        <h2>OS cadastradas</h2>
-        <span id="os_count" class="badge">0</span>
+      <div>
+        <label>Nº de ordem</label>
+        <input id="os_ordem" />
       </div>
+    </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Fiscal</th>
-            <th>Nº de ordem</th>
-            <th>Observação</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="os_tabela"></tbody>
-      </table>
+    <div class="row" style="align-items:flex-start;">
+      <label>Observação</label>
+      <textarea id="os_obs" rows="3" style="resize:vertical;"></textarea>
+    </div>
 
-      <div class="row">
-        <button id="os_saveSheets">Salvar no Banco</button>
-      </div>
-    </section>
+    <button id="os_add">Adicionar OS</button>
+  </section>
 
-  </main>
+  <section class="card">
+    <div class="list-header">
+      <h2>OS cadastradas</h2>
+      <span id="os_count" class="badge">0</span>
+    </div>
 
-  <footer><small>&copy; Sistema de Fiscalização</small></footer>
-</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Fiscal</th>
+          <th>Nº de ordem</th>
+          <th>Observação</th>
+        </tr>
+      </thead>
+      <tbody id="os_tabela"></tbody>
+    </table>
+
+    <div class="row">
+      <button id="os_saveSheets">Salvar no Banco</button>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ==========================
+   OS - MANUTENÇÃO
+========================== */
+
+let oss = [];
+
+document.getElementById("os_add").onclick = () => {
+  const os = {
+    Data: document.getElementById("os_data").value,
+    Fiscal: document.getElementById("os_fiscal").value,
+    Ordem: document.getElementById("os_ordem").value,
+    Obs: document.getElementById("os_obs").value
+  };
+
+  if (!os.Data || !os.Ordem) {
+    alert("Preencha pelo menos Data e Nº de Ordem.");
+    return;
+  }
+
+  oss.unshift(os);
+  renderOS();
+
+  // limpa campos
+  document.getElementById("os_ordem").value = "";
+  document.getElementById("os_obs").value = "";
+};
+
+function renderOS() {
+  const tbody = document.getElementById("os_tabela");
+  tbody.innerHTML = "";
+
+  oss.forEach(os => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${os.Data}</td>
+      <td>${os.Fiscal}</td>
+      <td>${os.Ordem}</td>
+      <td style="white-space:normal; max-width:300px;">${os.Obs}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("os_count").textContent = oss.length;
+}
+
+document.getElementById("os_saveSheets").onclick = () => {
+  if (!oss.length) return alert("Nenhuma OS adicionada.");
+
+  const rows = oss.map(os => ([
+    os.Data,
+    os.Fiscal,
+    os.Ordem,
+    os.Obs
+  ]));
+
+  fetch(OS_SHEETS_WEBAPP_URL, {
+    method: "POST",
+    headers: {"Content-Type":"text/plain"},
+    body: JSON.stringify({ rows })
+  })
+  .then(r => r.text())
+  .then(t => {
+    try {
+      const j = JSON.parse(t);
+      if (j.status === "ok") alert("OS enviadas com sucesso!");
+      else alert("Erro ao enviar OS: " + t);
+    } catch {
+      alert("Resposta inesperada ao enviar OS: " + t);
+    }
+  });
+};
+</script>
 
 <!-- CONTAINER DA VISUALIZAÇÃO / IMPRESSÃO -->
 <div id="print-view" style="display:none;"></div>
