@@ -302,7 +302,7 @@
 ========================== */
 
 const SHEETS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbykroSth8itWheW8N2JXkZ3pnjUhYEoO8XWqasZRsDbSnfj0PXNM0ruVd2mgopMP8A/exec";
+  "https://script.google.com/macros/s/AKfycbwppmMfiEuUhfwjWUOmne3MsznX7w4ztoTm8FZgcSxNEceWAiaY-31M7rVvXUkl8gfB/exec";
 
 const OS_SHEETS_WEBAPP_URL =
   "https://script.google.com/macros/s/AKfycbxPC3JLFZm0w6cM42UTRc_KWHLXVyLjWBI4P89saGEHsac4g1BusgsHhP77H6JVo4Db/exec";
@@ -646,7 +646,7 @@ document.getElementById("oc_print").onclick = async () => {
   const texto = document.getElementById("oc_texto").value;
 
 
-  /* ==========================
+/* ==========================
    SALVAR PDF DA OCORRÊNCIA NO DRIVE
 ========================== */
 fetch(SHEETS_WEBAPP_URL, {
@@ -654,18 +654,39 @@ fetch(SHEETS_WEBAPP_URL, {
   headers: { "Content-Type": "text/plain" },
   body: JSON.stringify({
     tipo: "ocorrencia_pdf",
-    motorista: motorista,
+
+    // Cabeçalho
+    fiscal: fiscal,
     data: data,
-    dataNumeros: data.replaceAll("/", ""),
-    texto: texto
+
+    // Dados da viagem
+    de: de,
+    para: para,
+    horario: horario,
+    ordem: ordem,
+    localEmb: localEmb,
+    hora: hora,
+    motorista: motorista,
+    paxs: paxs,
+
+    // Ocorrência
+    texto: texto,
+
+    // Nome do arquivo
+    dataNumeros: data.replaceAll("/", "")
   })
 })
-.then(r => r.text())
-.then(() => {
-  console.log("PDF da ocorrência salvo no Drive com sucesso");
+.then(r => r.json())
+.then(resp => {
+  if (resp.status === "ok") {
+    alert("✅ Ocorrência salva em PDF com sucesso!");
+  } else {
+    alert("⚠️ Erro ao salvar PDF no Drive");
+  }
 })
 .catch(err => {
-  console.error("Erro ao salvar PDF no Drive:", err);
+  console.error(err);
+  alert("❌ Falha ao comunicar com o servidor");
 });
 
 /* ==========================
