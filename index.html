@@ -338,7 +338,9 @@ document.getElementById("loginBtn").onclick = () => {
   if (!user) return alert("Selecione um fiscal.");
   if (user.pin !== pin) return alert("PIN incorreto!");
 
-  localStorage.setItem("fiscalId", user.id);
+localStorage.setItem("fiscalId", user.id);
+localStorage.setItem("fiscalPin", pin);
+
   iniciarApp(user);
 };
 
@@ -576,11 +578,19 @@ document.getElementById("os_saveSheets").onclick = () => {
     os.Obs
   ]));
 
-  fetch(OS_SHEETS_WEBAPP_URL, {
-    method: "POST",
-    headers: {"Content-Type":"text/plain"},
-    body: JSON.stringify({ rows })
+const fiscal = document.getElementById("os_fiscal").value;
+const pin = localStorage.getItem("fiscalPin");
+
+fetch(OS_SHEETS_WEBAPP_URL, {
+  method: "POST",
+  headers: {"Content-Type":"text/plain"},
+  body: JSON.stringify({
+    fiscal: fiscal,
+    pin: pin,
+    rows: rows
   })
+})
+
   .then(r => r.text())
   .then(t => {
     try {
