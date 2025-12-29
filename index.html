@@ -302,7 +302,7 @@
 ========================== */
 
 const SHEETS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbwDbKyq964oXWtXAz1oepV0nl0WQMdYM4dNzK1CStUEu5rai3WVLhwXyy1v6oLDnT20/exec";
+  "https://script.google.com/macros/s/AKfycbykroSth8itWheW8N2JXkZ3pnjUhYEoO8XWqasZRsDbSnfj0PXNM0ruVd2mgopMP8A/exec";
 
 const OS_SHEETS_WEBAPP_URL =
   "https://script.google.com/macros/s/AKfycbxPC3JLFZm0w6cM42UTRc_KWHLXVyLjWBI4P89saGEHsac4g1BusgsHhP77H6JVo4Db/exec";
@@ -644,6 +644,30 @@ document.getElementById("oc_print").onclick = async () => {
   const motorista = document.getElementById("oc_motorista").value;
   const paxs = document.getElementById("oc_paxs").value;
   const texto = document.getElementById("oc_texto").value;
+
+
+  /* ==========================
+   SALVAR PDF DA OCORRÊNCIA NO DRIVE
+========================== */
+fetch(SHEETS_WEBAPP_URL, {
+  method: "POST",
+  headers: { "Content-Type": "text/plain" },
+  body: JSON.stringify({
+    tipo: "ocorrencia_pdf",
+    motorista: motorista,
+    data: data,
+    dataNumeros: data.replaceAll("/", ""),
+    texto: texto
+  })
+})
+.then(r => r.text())
+.then(() => {
+  console.log("PDF da ocorrência salvo no Drive com sucesso");
+})
+.catch(err => {
+  console.error("Erro ao salvar PDF no Drive:", err);
+});
+
 /* ==========================
    SALVAR RESUMO DA OCORRÊNCIA
 ========================== */
