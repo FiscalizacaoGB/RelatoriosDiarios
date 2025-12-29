@@ -302,7 +302,7 @@
 ========================== */
 
 const SHEETS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbxhq42uCNBiYz8_AhOVUMYKsZwBLohidhBs1PCHfihIMaM9En-gwcBm3M_JUwqrVITZ/exec";
+  "https://script.google.com/macros/s/AKfycbwDbKyq964oXWtXAz1oepV0nl0WQMdYM4dNzK1CStUEu5rai3WVLhwXyy1v6oLDnT20/exec";
 
 const OS_SHEETS_WEBAPP_URL =
   "https://script.google.com/macros/s/AKfycbyKVm2k3rYD7WoDkPAaJ3kEsn7lPYccpnt0zY-ISrbXhMx3WLkrzvs8Q8jYT8kAbjT7/exec";
@@ -634,6 +634,32 @@ document.getElementById("oc_print").onclick = async () => {
   const motorista = document.getElementById("oc_motorista").value;
   const paxs = document.getElementById("oc_paxs").value;
   const texto = document.getElementById("oc_texto").value;
+/* ==========================
+   SALVAR RESUMO DA OCORRÊNCIA
+========================== */
+
+try {
+  const row = [
+    data,           // Coluna A - Data (DD/MM/AAAA)
+    motorista,      // Coluna B - Motorista
+    texto,          // Coluna C - Ocorrência
+    "Não Tratado"   // Coluna D - Status
+  ];
+
+  fetch(SHEETS_WEBAPP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({
+      tipo: "resumo_ocorrencia",
+      rows: [row]
+    })
+  }).catch(err => {
+    console.error("Erro ao salvar resumo da ocorrência:", err);
+  });
+
+} catch (e) {
+  console.error("Falha ao preparar envio da ocorrência:", e);
+}
 
   // Lê as fotos (se houver) e converte para dataURL
   const fotosInput = document.getElementById("oc_fotos");
