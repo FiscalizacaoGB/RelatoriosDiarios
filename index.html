@@ -628,8 +628,17 @@ document.querySelectorAll(".tab").forEach(btn => {
 /* ==========================
    VISUALIZAR / IMPRIMIR OCORRÊNCIA
 ========================== */
-
 document.getElementById("oc_print").onclick = async () => {
+
+  if (ocorrenciaEmProcesso) return;
+
+  ocorrenciaEmProcesso = true;
+
+  const btn = document.getElementById("oc_print");
+  btn.disabled = true;
+  const textoOriginal = btn.innerText;
+  btn.innerText = "Carregando...";
+
 
   const fiscal = document.getElementById("oc_fiscal").value;
   const dataValue = document.getElementById("oc_data").value;
