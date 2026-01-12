@@ -186,7 +186,6 @@
 
       <div class="row">
         <button id="saveSheets">Salvar no Banco</button>
-        <button id="export">Gerar CSV</button>
       </div>
     </section>
   </main>
@@ -487,7 +486,20 @@ document.getElementById("export").onclick = () => {
 ========================== */
 
 document.getElementById("saveSheets").onclick = () => {
-  if (!linhas.length) return alert("Nenhuma linha adicionada.");
+  if (relatorioEnviado) return;
+  relatorioEnviado = true;
+
+  const btn = document.getElementById("saveSheets");
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+
+  if (!linhas.length) {
+    alert("Nenhuma linha adicionada.");
+    relatorioEnviado = false;
+    btn.disabled = false;
+    btn.textContent = "Salvar no Banco";
+    return;
+  }
 
   const fiscal = document.getElementById("fiscal").value;
   const data = document.getElementById("data").value;
@@ -502,17 +514,18 @@ document.getElementById("saveSheets").onclick = () => {
     headers: {"Content-Type":"text/plain"},
     body: JSON.stringify({ rows })
   })
-  .then(r=>r.text())
-  .then(t=>{
-    try {
-      const j = JSON.parse(t);
-      if (j.status==="ok") alert("Enviado com sucesso!");
-      else alert("Erro: "+t);
-    } catch {
-      alert("Resposta inesperada: "+t);
-    }
+  .then(r => r.text())
+  .then(t => {
+    alert("Enviado com sucesso!");
+  })
+  .catch(() => {
+    alert("Erro ao enviar.");
+    relatorioEnviado = false;
+    btn.disabled = false;
+    btn.textContent = "Salvar no Banco";
   });
 };
+
 
 /* ==========================
    OS - MANUTENÇÃO
@@ -577,7 +590,20 @@ function renderOS() {
 }
 
 document.getElementById("os_saveSheets").onclick = () => {
-  if (!oss.length) return alert("Nenhuma OS adicionada.");
+  if (osEnviado) return;
+  osEnviado = true;
+
+  const btn = document.getElementById("os_saveSheets");
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+
+  if (!oss.length) {
+    alert("Nenhuma OS adicionada.");
+    osEnviado = false;
+    btn.disabled = false;
+    btn.textContent = "Salvar no Banco";
+    return;
+  }
 
   const rows = oss.map(os => ([
     os.Data,
@@ -586,30 +612,27 @@ document.getElementById("os_saveSheets").onclick = () => {
     os.Obs
   ]));
 
-const fiscal = document.getElementById("os_fiscal").value;
-const pin = localStorage.getItem("fiscalPin");
-
-fetch(OS_SHEETS_WEBAPP_URL, {
-  method: "POST",
-  headers: {"Content-Type":"text/plain"},
-  body: JSON.stringify({
-    fiscal: fiscal,
-    pin: pin,
-    rows: rows
+  fetch(OS_SHEETS_WEBAPP_URL, {
+    method: "POST",
+    headers: {"Content-Type":"text/plain"},
+    body: JSON.stringify({
+      fiscal: document.getElementById("os_fiscal").value,
+      pin: localStorage.getItem("fiscalPin"),
+      rows
+    })
   })
-})
-
   .then(r => r.text())
-  .then(t => {
-    try {
-      const j = JSON.parse(t);
-      if (j.status === "ok") alert("OS enviadas com sucesso!");
-      else alert("Erro ao enviar OS: " + t);
-    } catch {
-      alert("Resposta inesperada ao enviar OS: " + t);
-    }
+  .then(() => {
+    alert("OS enviadas com sucesso!");
+  })
+  .catch(() => {
+    alert("Erro ao enviar OS.");
+    osEnviado = false;
+    btn.disabled = false;
+    btn.textContent = "Salvar no Banco";
   });
 };
+
 
 /* ==========================
    TABS
@@ -638,6 +661,12 @@ document.querySelectorAll(".tab").forEach(btn => {
 ========================== */
 
 document.getElementById("oc_print").onclick = async () => {
+if (ocorrenciaProcessada) return;
+ocorrenciaProcessada = true;
+
+const btn = document.getElementById("oc_print");
+btn.disabled = true;
+btn.textContent = "Processando...";
 
   const fiscal = document.getElementById("oc_fiscal").value;
   const dataValue = document.getElementById("oc_data").value;
