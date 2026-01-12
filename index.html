@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="pt-br">
 <head>
@@ -480,46 +479,30 @@ document.getElementById("export").onclick = () => {
 ========================== */
 
 document.getElementById("saveSheets").onclick = () => {
-  if (relatorioEnviado) return;
   if (!linhas.length) return alert("Nenhuma linha adicionada.");
-
-  relatorioEnviado = true;
-
-  const btn = document.getElementById("saveSheets");
-  btn.disabled = true;
-  btn.textContent = "Enviando...";
-
-  const envioId = crypto.randomUUID();
 
   const fiscal = document.getElementById("fiscal").value;
   const data = document.getElementById("data").value;
 
   const rows = linhas.map(l => ([
     l.De,l.Para,l.Horário,l.Ordem,l.Local,l.Hora,l.Motorista,l.Paxs,
-    getLinha(l.De,l.Para), fiscal, data, envioId
+    getLinha(l.De,l.Para), fiscal, data
   ]));
 
   fetch(SHEETS_WEBAPP_URL, {
     method: "POST",
     headers: {"Content-Type":"text/plain"},
-    body: JSON.stringify({ envioId, rows })
+    body: JSON.stringify({ rows })
   })
-  .then(r => r.text())
-  .then(t => {
-    const j = JSON.parse(t);
-    if (j.status === "ok") {
-      alert("Enviado com sucesso!");
-      linhas = [];
-      render();
-    } else {
-      throw new Error(t);
+  .then(r=>r.text())
+  .then(t=>{
+    try {
+      const j = JSON.parse(t);
+      if (j.status==="ok") alert("Enviado com sucesso!");
+      else alert("Erro: "+t);
+    } catch {
+      alert("Resposta inesperada: "+t);
     }
-  })
-  .catch(() => {
-    alert("Erro ao enviar. Tente novamente.");
-    relatorioEnviado = false;
-    btn.disabled = false;
-    btn.textContent = "Salvar no Banco";
   });
 };
 
@@ -586,52 +569,39 @@ function renderOS() {
 }
 
 document.getElementById("os_saveSheets").onclick = () => {
-  if (osEnviado) return;
   if (!oss.length) return alert("Nenhuma OS adicionada.");
-
-  osEnviado = true;
-
-  const btn = document.getElementById("os_saveSheets");
-  btn.disabled = true;
-  btn.textContent = "Enviando...";
-
-  const envioId = crypto.randomUUID();
-
-  const fiscal = document.getElementById("os_fiscal").value;
-  const pin = localStorage.getItem("fiscalPin");
 
   const rows = oss.map(os => ([
     os.Data,
     os.Fiscal,
     os.Ordem,
-    os.Obs,
-    envioId
+    os.Obs
   ]));
 
-  fetch(OS_SHEETS_WEBAPP_URL, {
-    method: "POST",
-    headers: {"Content-Type":"text/plain"},
-    body: JSON.stringify({ envioId, fiscal, pin, rows })
+const fiscal = document.getElementById("os_fiscal").value;
+const pin = localStorage.getItem("fiscalPin");
+
+fetch(OS_SHEETS_WEBAPP_URL, {
+  method: "POST",
+  headers: {"Content-Type":"text/plain"},
+  body: JSON.stringify({
+    fiscal: fiscal,
+    pin: pin,
+    rows: rows
   })
+})
+
   .then(r => r.text())
   .then(t => {
-    const j = JSON.parse(t);
-    if (j.status === "ok") {
-      alert("OS enviadas com sucesso!");
-      oss = [];
-      renderOS();
-    } else {
-      throw new Error(t);
+    try {
+      const j = JSON.parse(t);
+      if (j.status === "ok") alert("OS enviadas com sucesso!");
+      else alert("Erro ao enviar OS: " + t);
+    } catch {
+      alert("Resposta inesperada ao enviar OS: " + t);
     }
-  })
-  .catch(() => {
-    alert("Erro ao enviar OS.");
-    osEnviado = false;
-    btn.disabled = false;
-    btn.textContent = "Salvar no Banco";
   });
 };
-
 
 /* ==========================
    TABS
@@ -660,14 +630,6 @@ document.querySelectorAll(".tab").forEach(btn => {
 ========================== */
 
 document.getElementById("oc_print").onclick = async () => {
-  if (ocorrenciaProcessada) return;
-  ocorrenciaProcessada = true;
-
-  const btn = document.getElementById("oc_print");
-  btn.disabled = true;
-  btn.textContent = "Processando...";
-
-  const envioId = crypto.randomUUID();
 
   const fiscal = document.getElementById("oc_fiscal").value;
   const dataValue = document.getElementById("oc_data").value;
@@ -690,22 +652,9 @@ document.getElementById("oc_print").onclick = async () => {
 fetch(SHEETS_WEBAPP_URL, {
   method: "POST",
   headers: { "Content-Type": "text/plain" },
- body: JSON.stringify({
-  tipo: "ocorrencia_pdf",
-  envioId,
-  fiscal,
-  data,
-  de,
-  para,
-  horario,
-  ordem,
-  localEmb,
-  hora,
-  motorista,
-  paxs,
-  texto,
-  dataNumeros: data.replaceAll("/", "")
-})
+  body: JSON.stringify({
+    tipo: "ocorrencia_pdf",
+
     // Cabeçalho
     fiscal: fiscal,
     data: data,
@@ -755,11 +704,10 @@ try {
   fetch(SHEETS_WEBAPP_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
-   body: JSON.stringify({
-  tipo: "resumo_ocorrencia",
-  envioId,
-  rows: [[data, motorista, texto, "Não Tratado"]]
-})
+    body: JSON.stringify({
+      tipo: "resumo_ocorrencia",
+      rows: [row]
+    })
   }).catch(err => {
     console.error("Erro ao salvar resumo da ocorrência:", err);
   });
