@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="pt-br">
 <head>
@@ -70,6 +69,14 @@
 
     footer { text-align:center; padding:24px; color:#6b7280; }
 
+    /* LOGIN */
+    #login-screen {
+      min-height: 100vh; display:flex; align-items:center;
+      justify-content:center; padding:16px;
+    }
+    .login-card { max-width:420px; width:100%; }
+    .login-logo-wrapper { display:flex; justify-content:center; margin-bottom:12px; }
+    .login-logo { height:64px; }
 
     /* PRINT VIEW CONTAINER */
     #print-view { padding:24px; max-width:900px; margin:0 auto; }
@@ -84,6 +91,35 @@
 
 <body>
 
+<!-- LOGIN -->
+<div id="login-screen">
+  <section class="card login-card">
+    <div class="login-logo-wrapper">
+      <img src="logo.png" class="login-logo" />
+    </div>
+    <h2>Login do Fiscal</h2>
+
+    <div class="row">
+      <label>Fiscal</label>
+      <select id="loginFiscal">
+        <option value="">Selecione</option>
+        <option value="Lucas">Lucas Ribeiro</option>
+        <option value="Vilcemar">Vilcemar</option>
+        <option value="Everton">Everton</option>
+        <option value="Luciano">Luciano</option>
+        <option value="Wellington">Wellington</option>
+        <option value="Joseval">Joseval</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label>PIN</label>
+      <input id="loginPin" type="password" placeholder="****" />
+    </div>
+
+    <button id="loginBtn">Entrar</button>
+  </section>
+</div>
 
 <!-- APP -->
 <div id="app" style="display:none;">
@@ -261,6 +297,11 @@
 <div id="print-view" style="display:none;"></div>
 
 <script>
+  // FLAGS DE CONTROLE (OBRIGATÓRIO)
+let relatorioEnviado = false;
+let osEnviado = false;
+let ocorrenciaProcessada = false;
+
 /* ==========================
    CONFIGURAÇÕES GERAIS
 ========================== */
@@ -289,6 +330,49 @@ const CODIGOS = {
 };
 
 const CIDADES = ["Salvador", ...Object.keys(CODIGOS)];
+
+/* ==========================
+   LOGIN
+========================== */
+
+document.getElementById("loginBtn").onclick = () => {
+  const id = document.getElementById("loginFiscal").value;
+  const pin = document.getElementById("loginPin").value;
+
+  const user = FISCAIS.find(f => f.id === id);
+  if (!user) return alert("Selecione um fiscal.");
+  if (user.pin !== pin) return alert("PIN incorreto!");
+
+localStorage.setItem("fiscalId", user.id);
+localStorage.setItem("fiscalPin", pin);
+
+  iniciarApp(user);
+};
+
+function iniciarApp(user) {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  document.getElementById("fiscal").value = user.name;
+  document.getElementById("oc_fiscal").value = user.name;
+  document.getElementById("os_fiscal").value = user.name;
+
+  const hoje = new Date();
+  document.getElementById("data").valueAsDate = hoje;
+  document.getElementById("oc_data").valueAsDate = hoje;
+  document.getElementById("os_data").valueAsDate = hoje;
+
+  preencherSelects();
+}
+
+/* Auto login */
+const saved = localStorage.getItem("fiscalId");
+const savedPin = localStorage.getItem("fiscalPin");
+
+if (saved && savedPin) {
+  const user = FISCAIS.find(f => f.id === saved && f.pin === savedPin);
+  if (user) iniciarApp(user);
+}
 
 
 /* ==========================
@@ -738,30 +822,13 @@ try {
   };
 };
 
-/* =========================
+/* ==========================
    SERVICE WORKER
 ========================== */
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");
 }
-  // INICIALIZAÇÃO DIRETA (SEM LOGIN)
-window.onload = () => {
-  document.getElementById("app").style.display = "block";
-
-  const fiscalPadrao = FISCAIS[0]; // ou defina manualmente
-  document.getElementById("fiscal").value = fiscalPadrao.name;
-  document.getElementById("oc_fiscal").value = fiscalPadrao.name;
-  document.getElementById("os_fiscal").value = fiscalPadrao.name;
-
-  const hoje = new Date();
-  document.getElementById("data").valueAsDate = hoje;
-  document.getElementById("oc_data").valueAsDate = hoje;
-  document.getElementById("os_data").valueAsDate = hoje;
-
-  preencherSelects();
-};
-
 </script>
 
 </body>
