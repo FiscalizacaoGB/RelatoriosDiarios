@@ -301,6 +301,18 @@
 let relatorioEnviado = false;
 let osEnviado = false;
 let ocorrenciaProcessada = false;
+function bloquearBotao(btn, texto = "Carregando...") {
+  btn.disabled = true;
+  btn.dataset.originalText = btn.textContent;
+  btn.textContent = texto;
+}
+
+function desbloquearBotao(btn) {
+  btn.disabled = false;
+  if (btn.dataset.originalText) {
+    btn.textContent = btn.dataset.originalText;
+  }
+}
 
 /* ==========================
    CONFIGURAÇÕES GERAIS
@@ -487,14 +499,20 @@ document.getElementById("export").onclick = () => {
 ========================== */
 
 document.getElementById("saveSheets").onclick = () => {
+  if (relatorioEnviado) return;
   if (!linhas.length) return alert("Nenhuma linha adicionada.");
+
+  relatorioEnviado = true;
+
+  const btn = document.getElementById("saveSheets");
+  bloquearBotao(btn);
 
   const fiscal = document.getElementById("fiscal").value;
   const data = document.getElementById("data").value;
 
   const rows = linhas.map(l => ([
-    l.De,l.Para,l.Horário,l.Ordem,l.Local,l.Hora,l.Motorista,l.Paxs,
-    getLinha(l.De,l.Para), fiscal, data
+    l.De, l.Para, l.Horário, l.Ordem, l.Local, l.Hora,
+    l.Motorista, l.Paxs, getLinha(l.De,l.Para), fiscal, data
   ]));
 
   fetch(SHEETS_WEBAPP_URL, {
@@ -502,17 +520,25 @@ document.getElementById("saveSheets").onclick = () => {
     headers: {"Content-Type":"text/plain"},
     body: JSON.stringify({ rows })
   })
-  .then(r=>r.text())
-  .then(t=>{
-    try {
-      const j = JSON.parse(t);
-      if (j.status==="ok") alert("Enviado com sucesso!");
-      else alert("Erro: "+t);
-    } catch {
-      alert("Resposta inesperada: "+t);
+  .then(r => r.json())
+  .then(j => {
+    if (j.status === "ok") {
+      alert("Enviado com sucesso!");
+      linhas = [];
+      render();
+    } else {
+      alert("Erro: " + JSON.stringify(j));
+      relatorioEnviado = false;
+      desbloquearBotao(btn);
     }
+  })
+  .catch(() => {
+    alert("Falha de comunicação");
+    relatorioEnviado = false;
+    desbloquearBotao(btn);
   });
 };
+
 
 /* ==========================
    OS - MANUTENÇÃO
@@ -577,39 +603,46 @@ function renderOS() {
 }
 
 document.getElementById("os_saveSheets").onclick = () => {
+  if (osEnviado) return;
   if (!oss.length) return alert("Nenhuma OS adicionada.");
 
+  osEnviado = true;
+
+  const btn = document.getElementById("os_saveSheets");
+  bloquearBotao(btn);
+
   const rows = oss.map(os => ([
-    os.Data,
-    os.Fiscal,
-    os.Ordem,
-    os.Obs
+    os.Data, os.Fiscal, os.Ordem, os.Obs
   ]));
 
-const fiscal = document.getElementById("os_fiscal").value;
-const pin = localStorage.getItem("fiscalPin");
-
-fetch(OS_SHEETS_WEBAPP_URL, {
-  method: "POST",
-  headers: {"Content-Type":"text/plain"},
-  body: JSON.stringify({
-    fiscal: fiscal,
-    pin: pin,
-    rows: rows
+  fetch(OS_SHEETS_WEBAPP_URL, {
+    method: "POST",
+    headers: {"Content-Type":"text/plain"},
+    body: JSON.stringify({
+      fiscal: document.getElementById("os_fiscal").value,
+      pin: localStorage.getItem("fiscalPin"),
+      rows
+    })
   })
-})
-
-  .then(r => r.text())
-  .then(t => {
-    try {
-      const j = JSON.parse(t);
-      if (j.status === "ok") alert("OS enviadas com sucesso!");
-      else alert("Erro ao enviar OS: " + t);
-    } catch {
-      alert("Resposta inesperada ao enviar OS: " + t);
+  .then(r => r.json())
+  .then(j => {
+    if (j.status === "ok") {
+      alert("OS enviadas com sucesso!");
+      oss = [];
+      renderOS();
+    } else {
+      alert("Erro ao enviar OS");
+      osEnviado = false;
+      desbloquearBotao(btn);
     }
+  })
+  .catch(() => {
+    alert("Falha de comunicação");
+    osEnviado = false;
+    desbloquearBotao(btn);
   });
 };
+
 
 /* ==========================
    TABS
@@ -638,64 +671,78 @@ document.querySelectorAll(".tab").forEach(btn => {
 ========================== */
 
 document.getElementById("oc_print").onclick = async () => {
+  if (ocorrenciaProcessada) return;
+ocorrenciaProcessada = true;
 
-  const fiscal = document.getElementById("oc_fiscal").value;
-  const dataValue = document.getElementById("oc_data").value;
-  const data = dataValue ? dataValue.split("-").reverse().join("/") : "";
+document.getElementById("oc_print").onclick = async () => {
 
-  const de = document.getElementById("oc_de").value;
-  const para = document.getElementById("oc_para").value;
-  const horario = document.getElementById("oc_horario").value;
-  const ordem = document.getElementById("oc_ordem").value;
-  const localEmb = document.getElementById("oc_local").value;
-  const hora = document.getElementById("oc_hora").value;
-  const motorista = document.getElementById("oc_motorista").value;
-  const paxs = document.getElementById("oc_paxs").value;
-  const texto = document.getElementById("oc_texto").value;
+  // 🔒 Trava contra clique duplo
+  if (ocorrenciaProcessada) return;
+  ocorrenciaProcessada = true;
 
+  const btn = document.getElementById("oc_print");
+  bloquearBotao(btn, "Gerando...");
 
-/* ==========================
-   SALVAR PDF DA OCORRÊNCIA NO DRIVE
-========================== */
-fetch(SHEETS_WEBAPP_URL, {
-  method: "POST",
-  headers: { "Content-Type": "text/plain" },
-  body: JSON.stringify({
-    tipo: "ocorrencia_pdf",
+  try {
+    const fiscal = document.getElementById("oc_fiscal").value;
 
-    // Cabeçalho
-    fiscal: fiscal,
-    data: data,
+    const dataValue = document.getElementById("oc_data").value;
+    const data = dataValue ? dataValue.split("-").reverse().join("/") : "";
 
-    // Dados da viagem
-    de: de,
-    para: para,
-    horario: horario,
-    ordem: ordem,
-    localEmb: localEmb,
-    hora: hora,
-    motorista: motorista,
-    paxs: paxs,
+    const de = document.getElementById("oc_de").value;
+    const para = document.getElementById("oc_para").value;
+    const horario = document.getElementById("oc_horario").value;
+    const ordem = document.getElementById("oc_ordem").value;
+    const localEmb = document.getElementById("oc_local").value;
+    const hora = document.getElementById("oc_hora").value;
+    const motorista = document.getElementById("oc_motorista").value;
+    const paxs = document.getElementById("oc_paxs").value;
+    const texto = document.getElementById("oc_texto").value;
 
-    // Ocorrência
-    texto: texto,
+    /* ==========================
+       SALVAR PDF DA OCORRÊNCIA
+    ========================== */
+    const resp = await fetch(SHEETS_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        tipo: "ocorrencia_pdf",
 
-    // Nome do arquivo
-    dataNumeros: data.replaceAll("/", "")
-  })
-})
-.then(r => r.json())
-.then(resp => {
-  if (resp.status === "ok") {
-    alert("✅ Ocorrência salva em PDF com sucesso!");
-  } else {
-    alert("⚠️ Erro ao salvar PDF no Drive");
+        fiscal,
+        data,
+
+        de,
+        para,
+        horario,
+        ordem,
+        localEmb,
+        hora,
+        motorista,
+        paxs,
+
+        texto,
+        dataNumeros: data.replaceAll("/", "")
+      })
+    });
+
+    const json = await resp.json();
+
+    if (json.status === "ok") {
+      alert("✅ Ocorrência salva em PDF com sucesso!");
+      // ❗ NÃO desbloqueia em sucesso (evita duplicação)
+    } else {
+      throw new Error("Erro retornado pelo servidor");
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Falha ao comunicar com o servidor");
+
+    // 🔓 Libera apenas se falhar
+    ocorrenciaProcessada = false;
+    desbloquearBotao(btn);
   }
-})
-.catch(err => {
-  console.error(err);
-  alert("❌ Falha ao comunicar com o servidor");
-});
+};
 
 /* ==========================
    SALVAR RESUMO DA OCORRÊNCIA
