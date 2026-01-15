@@ -671,12 +671,8 @@ document.querySelectorAll(".tab").forEach(btn => {
 ========================== */
 
 document.getElementById("oc_print").onclick = async () => {
-  if (ocorrenciaProcessada) return;
-ocorrenciaProcessada = true;
 
-document.getElementById("oc_print").onclick = async () => {
-
-  // 🔒 Trava contra clique duplo
+  // 🔒 Bloqueio contra clique duplo
   if (ocorrenciaProcessada) return;
   ocorrenciaProcessada = true;
 
@@ -685,7 +681,6 @@ document.getElementById("oc_print").onclick = async () => {
 
   try {
     const fiscal = document.getElementById("oc_fiscal").value;
-
     const dataValue = document.getElementById("oc_data").value;
     const data = dataValue ? dataValue.split("-").reverse().join("/") : "";
 
@@ -707,10 +702,8 @@ document.getElementById("oc_print").onclick = async () => {
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({
         tipo: "ocorrencia_pdf",
-
         fiscal,
         data,
-
         de,
         para,
         horario,
@@ -719,155 +712,77 @@ document.getElementById("oc_print").onclick = async () => {
         hora,
         motorista,
         paxs,
-
         texto,
         dataNumeros: data.replaceAll("/", "")
       })
     });
 
     const json = await resp.json();
+    if (json.status !== "ok") throw new Error("Erro ao salvar PDF");
 
-    if (json.status === "ok") {
-      alert("✅ Ocorrência salva em PDF com sucesso!");
-      // ❗ NÃO desbloqueia em sucesso (evita duplicação)
-    } else {
-      throw new Error("Erro retornado pelo servidor");
+    /* ==========================
+       SALVAR RESUMO DA OCORRÊNCIA
+    ========================== */
+    await fetch(SHEETS_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        tipo: "resumo_ocorrencia",
+        rows: [[data, motorista, texto, "Não Tratado"]]
+      })
+    });
+
+    /* ==========================
+       MONTAR VISUALIZAÇÃO
+    ========================== */
+    const fotosInput = document.getElementById("oc_fotos");
+    let imagens = [];
+
+    if (fotosInput.files.length) {
+      imagens = await Promise.all(
+        Array.from(fotosInput.files).map(file =>
+          new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.readAsDataURL(file);
+          })
+        )
+      );
     }
+
+    const fotosHTML = imagens.map(src =>
+      `<img src="${src}" style="max-width:100%; margin-top:8px;">`
+    ).join("");
+
+    const printView = document.getElementById("print-view");
+    printView.style.display = "block";
+
+    printView.innerHTML = `
+      <h1>Registro de Ocorrência</h1>
+      <p><strong>Fiscal:</strong> ${fiscal}</p>
+      <p><strong>Data:</strong> ${data}</p>
+
+      <h2>Dados da Viagem</h2>
+      <p>${de} → ${para} | ${horario} | Ordem ${ordem}</p>
+
+      <h2>Ocorrência</h2>
+      <p>${texto.replace(/\n/g, "<br>")}</p>
+
+      ${fotosHTML}
+
+      <button onclick="window.print()">Imprimir</button>
+      <button onclick="document.getElementById('print-view').style.display='none'">Voltar</button>
+    `;
 
   } catch (err) {
     console.error(err);
-    alert("❌ Falha ao comunicar com o servidor");
+    alert("❌ Erro ao processar ocorrência");
 
-    // 🔓 Libera apenas se falhar
     ocorrenciaProcessada = false;
     desbloquearBotao(btn);
   }
 };
 
-/* ==========================
-   SALVAR RESUMO DA OCORRÊNCIA
-========================== */
-
-try {
-  const row = [
-    data,           // Coluna A - Data (DD/MM/AAAA)
-    motorista,      // Coluna B - Motorista
-    texto,          // Coluna C - Ocorrência
-    "Não Tratado"   // Coluna D - Status
-  ];
-
-  fetch(SHEETS_WEBAPP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({
-      tipo: "resumo_ocorrencia",
-      rows: [row]
-    })
-  }).catch(err => {
-    console.error("Erro ao salvar resumo da ocorrência:", err);
-  });
-
-} catch (e) {
-  console.error("Falha ao preparar envio da ocorrência:", e);
-}
-
-  // Lê as fotos (se houver) e converte para dataURL
-  const fotosInput = document.getElementById("oc_fotos");
-  let imagens = [];
-  if (fotosInput.files && fotosInput.files.length) {
-    imagens = await Promise.all(
-      Array.from(fotosInput.files).map(file =>
-        new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onload = e => resolve(e.target.result);
-          reader.readAsDataURL(file);
-        })
-      )
-    );
-  }
-
-  const imagensHTML = imagens
-    .map(src => `<img src="${src}" style="max-width:100%; margin-top:8px; display:block;">`)
-    .join("");
-
-  const fotosSection = imagens.length
-    ? `
-      <h2>Fotos da Ocorrência</h2>
-      <div class="fotos">
-        ${imagensHTML}
-      </div>
-    `
-    : "";
-
-  const printView = document.getElementById("print-view");
-  printView.style.display = "block";
-
-  printView.innerHTML = `
-    <style>
-      body { font-family: Arial, sans-serif; }
-      h1 { font-size: 20px; margin-bottom: 8px; }
-      h2 { font-size: 16px; margin-top: 16px; margin-bottom: 8px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-      th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 13px; text-align:left; }
-      th.label-col { width: 140px; white-space:nowrap; }
-      .bloco { margin-top: 12px; text-align: justify; }
-      .assinatura { margin-top: 40px; }
-      .assinatura span { border-top:1px solid #000; padding-top:4px; display:inline-block; }
-      .top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-      .top-bar img { height:48px; }
-      .acoes { margin-top:16px; }
-      .acoes button { padding:6px 10px; margin-right:8px; }
-      @media print {
-        .acoes { display:none; }
-      }
-    </style>
-
-    <div class="top-bar">
-      <h1>Registro de Ocorrência - Fiscalização</h1>
-      <img src="logo.png" alt="Cidade Sol" />
-    </div>
-    <div><strong>Fiscal:</strong> ${fiscal}</div>
-    <div><strong>Data:</strong> ${data}</div>
-
-    <h2>Dados da Viagem</h2>
-    <table>
-      <tr><th class="label-col">De</th><td>${de}</td></tr>
-      <tr><th class="label-col">Para</th><td>${para}</td></tr>
-      <tr><th class="label-col">Horário</th><td>${horario}</td></tr>
-      <tr><th class="label-col">Nº de Ordem</th><td>${ordem}</td></tr>
-      <tr><th class="label-col">Local Embarque</th><td>${localEmb}</td></tr>
-      <tr><th class="label-col">Hora</th><td>${hora}</td></tr>
-      <tr><th class="label-col">Motorista</th><td>${motorista}</td></tr>
-      <tr><th class="label-col">Qtd. Paxs</th><td>${paxs}</td></tr>
-    </table>
-
-    <h2>Descrição da Ocorrência</h2>
-    <div class="bloco">
-      ${texto.replace(/\n/g, "<br>")}
-    </div>
-
-    ${fotosSection}
-
-    <div class="assinatura">
-      <span>${fiscal}</span><br/>
-      <small>Fiscal</small>
-    </div>
-
-    <div class="acoes">
-      <button id="btnVoltar">Voltar</button>
-      <button id="btnImprimir">Imprimir</button>
-    </div>
-  `;
-
-  document.getElementById("btnVoltar").onclick = () => {
-    printView.style.display = "none";
-    printView.innerHTML = "";
-  };
-
-  document.getElementById("btnImprimir").onclick = () => {
-    window.print();
-  };
-};
 
 /* ==========================
    SERVICE WORKER
