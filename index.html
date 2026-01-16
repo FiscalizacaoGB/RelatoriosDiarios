@@ -759,22 +759,65 @@ document.getElementById("oc_print").onclick = async () => {
     const printView = document.getElementById("print-view");
     printView.style.display = "block";
 
-    printView.innerHTML = `
-      <h1>Registro de Ocorrência</h1>
-      <p><strong>Fiscal:</strong> ${fiscal}</p>
-      <p><strong>Data:</strong> ${data}</p>
+  printView.innerHTML = `
+  <style>
+  body, table {
+  font-family: Arial, sans-serif;
+}
 
-      <h2>Dados da Viagem</h2>
-      <p>${de} → ${para} | ${horario} | Ordem ${ordem}</p>
+    h1 { font-size:20px; margin-bottom:8px; }
+    h2 { font-size:16px; margin-top:16px; margin-bottom:8px; }
+    table { width:100%; border-collapse:collapse; margin-top:8px; }
+    td { border:1px solid #ccc; padding:6px 8px; font-size:13px; }
+    td.label { width:160px; font-weight:bold; white-space:nowrap; }
+    .bloco { margin-top:12px; font-size:13px; }
+    .assinatura { margin-top:40px; }
+    .assinatura span {
+      border-top:1px solid #000;
+      padding-top:4px;
+      display:inline-block;
+      min-width:240px;
+    }
+    .acoes { margin-top:20px; }
+    @media print {
+      .acoes { display:none; }
+    }
+  </style>
 
-      <h2>Ocorrência</h2>
-      <p>${texto.replace(/\n/g, "<br>")}</p>
+  <h1>Registro de Ocorrência - Fiscalização</h1>
 
-      ${fotosHTML}
+  <div><strong>Fiscal:</strong> ${fiscal}</div>
+  <div><strong>Data:</strong> ${data}</div>
 
-      <button onclick="window.print()">Imprimir</button>
-      <button onclick="document.getElementById('print-view').style.display='none'">Voltar</button>
-    `;
+  <h2>Dados da Viagem</h2>
+  <table>
+    <tr><td class="label">De</td><td>${de}</td></tr>
+    <tr><td class="label">Para</td><td>${para}</td></tr>
+    <tr><td class="label">Horário</td><td>${horario}</td></tr>
+    <tr><td class="label">Nº de Ordem</td><td>${ordem}</td></tr>
+    <tr><td class="label">Local Embarque</td><td>${localEmb}</td></tr>
+    <tr><td class="label">Hora</td><td>${hora}</td></tr>
+    <tr><td class="label">Motorista</td><td>${motorista}</td></tr>
+    <tr><td class="label">Qtd. Paxs</td><td>${paxs}</td></tr>
+  </table>
+
+  <h2>Descrição da Ocorrência</h2>
+  <div class="bloco">
+    ${texto.replace(/\n/g, "<br>")}
+  </div>
+
+  ${fotosHTML ? `<h2>Fotos</h2>${fotosHTML}` : ""}
+
+  <div class="assinatura">
+    <span>${fiscal}</span><br>
+    <small>Fiscal</small>
+  </div>
+
+  <div class="acoes">
+    <button onclick="window.print()">Imprimir</button>
+    <button onclick="document.getElementById('print-view').style.display='none'">Voltar</button>
+  </div>
+`;
 
   } catch (err) {
     console.error(err);
