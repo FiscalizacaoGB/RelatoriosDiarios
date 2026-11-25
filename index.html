@@ -312,7 +312,7 @@
       </div>
 
       <div class="acoes-form">
-        <button id="oc_print" class="btn-primary">Salvar e Visualizar / Imprimir</button>
+        <button id="oc_print" class="btn-primary">Visualizar antes de enviar</button>
       </div>
     </section>
 
@@ -964,8 +964,11 @@ function comprimirImagem(file, maxLado = 1280, qualidade = 0.7) {
 }
 
 /* ==========================
-   VISUALIZAR / IMPRIMIR OCORRÊNCIA
+   VISUALIZAR / EDITAR / ENVIAR OCORRÊNCIA
+   Fluxo: Visualizar -> (Editar) -> Confirmar e enviar -> Imprimir
 ========================== */
+
+let ocPreparada = null;   // dados + fotos da ocorrência em revisão
 
 function fecharVisualizacao() {
   $("print-view").style.display = "none";
@@ -974,79 +977,42 @@ function fecharVisualizacao() {
   window.scrollTo(0, 0);
 }
 
-$("oc_print").onclick = async () => {
+// Volta para o formulário com tudo preenchido, para corrigir
+function editarOcorrencia() {
+  fecharVisualizacao();
+  $("oc_texto").focus();
+}
 
-  // 🔒 Bloqueio contra clique duplo
-  if (ocorrenciaProcessada) return;
+// Depois de enviada: limpa o formulário e volta para o app
+function novaOcorrencia() {
+  ocPreparada = null;
+  fecharVisualizacao();
+}
 
-  const fiscal = $("oc_fiscal").value;
+function lerFormOcorrencia() {
   const dataValue = $("oc_data").value;
   const data = dataValue ? dataValue.split("-").reverse().join("/") : "";
+  return {
+    fiscal: $("oc_fiscal").value,
+    data,
+    de: $("oc_de").value,
+    para: $("oc_para").value,
+    horario: $("oc_horario").value,
+    ordem: $("oc_ordem").value.trim(),
+    localEmb: $("oc_local").value.trim(),
+    hora: $("oc_hora").value,
+    motorista: $("oc_motorista").value.trim(),
+    paxs: $("oc_paxs").value,
+    texto: $("oc_texto").value.trim()
+  };
+}
 
-  const de = $("oc_de").value;
-  const para = $("oc_para").value;
-  const horario = $("oc_horario").value;
-  const ordem = $("oc_ordem").value.trim();
-  const localEmb = $("oc_local").value.trim();
-  const hora = $("oc_hora").value;
-  const motorista = $("oc_motorista").value.trim();
-  const paxs = $("oc_paxs").value;
-  const texto = $("oc_texto").value.trim();
+function htmlOcorrencia(d, imagens) {
+  const fotosHTML = imagens.map(src =>
+    `<img src="${src}" style="max-width:100%; margin-top:8px; display:block;">`
+  ).join("");
 
-  if (!data) { toast("Informe a data.", "erro"); return $("oc_data").focus(); }
-  if (!motorista) { toast("Informe o motorista.", "erro"); return $("oc_motorista").focus(); }
-  if (!texto) { toast("Descreva a ocorrência.", "erro"); return $("oc_texto").focus(); }
-
-  ocorrenciaProcessada = true;
-  const btn = $("oc_print");
-  bloquearBotao(btn, "Preparando fotos...");
-
-  try {
-    /* ==========================
-       FOTOS
-    ========================== */
-    const arquivos = Array.from($("oc_fotos").files);
-    const imagens = [];
-    for (const f of arquivos) imagens.push(await comprimirImagem(f));
-
-    /* ==========================
-       SALVAR PDF + RESUMO (um único envio)
-    ========================== */
-    btn.textContent = "Salvando...";
-
-    const json = await postJSON(SHEETS_WEBAPP_URL, {
-      tipo: "ocorrencia_pdf",
-      incluirResumo: true,
-      fiscal,
-      data,
-      de,
-      para,
-      horario,
-      ordem,
-      localEmb,
-      hora,
-      motorista,
-      paxs,
-      texto,
-      fotos: imagens,
-      dataNumeros: data.replaceAll("/", "")
-    });
-
-    if (json.status !== "ok") throw new Error(json.message || "Erro ao salvar PDF");
-
-    registrarHistorico(motorista, localEmb);
-    toast("✅ Ocorrência salva com sucesso.", "ok");
-
-    /* ==========================
-       MONTAR VISUALIZAÇÃO
-    ========================== */
-    const fotosHTML = imagens.map(src =>
-      `<img src="${src}" style="max-width:100%; margin-top:8px; display:block;">`
-    ).join("");
-
-    const printView = $("print-view");
-
-    printView.innerHTML = `
+  return `
   <style>
     #print-view, #print-view table { font-family: Arial, sans-serif; }
     #print-view h1 { font-size:20px; margin-bottom:8px; }
@@ -1062,66 +1028,138 @@ $("oc_print").onclick = async () => {
       display:inline-block;
       min-width:240px;
     }
-    #print-view .acoes { margin-bottom:20px; display:flex; gap:8px; flex-wrap:wrap; }
+    #print-view .acoes { margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap; }
+    #print-view .aviso-revisao {
+      background:#fffbeb; border:1px solid #fde68a; color:#92400e;
+      border-radius:10px; padding:10px 12px; font-size:14px; margin-bottom:16px;
+    }
+    #print-view .aviso-ok {
+      background:#f0fdf4; border:1px solid #bbf7d0; color:#166534;
+      border-radius:10px; padding:10px 12px; font-size:14px; margin-bottom:16px;
+    }
     @media print {
-      #print-view .acoes { display:none; }
+      #print-view .acoes, #print-view .aviso-revisao, #print-view .aviso-ok { display:none; }
     }
   </style>
 
-  <div class="acoes">
-    <button class="btn-primary" onclick="window.print()">Imprimir</button>
-    <button onclick="fecharVisualizacao()">Voltar</button>
+  <div class="acoes" id="oc_acoes">
+    <button onclick="editarOcorrencia()">✏️ Editar</button>
+    <button class="btn-primary" id="oc_confirmar" onclick="confirmarOcorrencia()">Confirmar e enviar</button>
+  </div>
+  <div class="aviso-revisao" id="oc_aviso">
+    Confira os dados abaixo. A ocorrência <strong>ainda não foi enviada</strong>.
+    Toque em <strong>Editar</strong> para corrigir ou em <strong>Confirmar e enviar</strong> para salvar.
   </div>
 
   <h1>Registro de Ocorrência - Fiscalização</h1>
 
-  <div><strong>Fiscal:</strong> ${esc(fiscal)}</div>
-  <div><strong>Data:</strong> ${esc(data)}</div>
+  <div><strong>Fiscal:</strong> ${esc(d.fiscal)}</div>
+  <div><strong>Data:</strong> ${esc(d.data)}</div>
 
   <h2>Dados da Viagem</h2>
   <table>
-    <tr><td class="label">De</td><td>${esc(de)}</td></tr>
-    <tr><td class="label">Para</td><td>${esc(para)}</td></tr>
-    <tr><td class="label">Horário</td><td>${esc(horario)}</td></tr>
-    <tr><td class="label">Nº de Ordem</td><td>${esc(ordem)}</td></tr>
-    <tr><td class="label">Local Embarque</td><td>${esc(localEmb)}</td></tr>
-    <tr><td class="label">Hora</td><td>${esc(hora)}</td></tr>
-    <tr><td class="label">Motorista</td><td>${esc(motorista)}</td></tr>
-    <tr><td class="label">Qtd. Paxs</td><td>${esc(paxs)}</td></tr>
+    <tr><td class="label">De</td><td>${esc(d.de)}</td></tr>
+    <tr><td class="label">Para</td><td>${esc(d.para)}</td></tr>
+    <tr><td class="label">Horário</td><td>${esc(d.horario)}</td></tr>
+    <tr><td class="label">Nº de Ordem</td><td>${esc(d.ordem)}</td></tr>
+    <tr><td class="label">Local Embarque</td><td>${esc(d.localEmb)}</td></tr>
+    <tr><td class="label">Hora</td><td>${esc(d.hora)}</td></tr>
+    <tr><td class="label">Motorista</td><td>${esc(d.motorista)}</td></tr>
+    <tr><td class="label">Qtd. Paxs</td><td>${esc(d.paxs)}</td></tr>
   </table>
 
   <h2>Descrição da Ocorrência</h2>
   <div class="bloco">
-    ${esc(texto).replace(/\n/g, "<br>")}
+    ${esc(d.texto).replace(/\n/g, "<br>")}
   </div>
 
   ${fotosHTML ? `<h2>Fotos</h2>${fotosHTML}` : ""}
 
   <div class="assinatura">
-    <span>${esc(fiscal)}</span><br>
+    <span>${esc(d.fiscal)}</span><br>
     <small>Fiscal</small>
   </div>
 `;
+}
 
-    // Abre a visualização no topo, no lugar do app
+/* 1) VISUALIZAR (não envia nada) */
+$("oc_print").onclick = async () => {
+  if (ocorrenciaProcessada) return;
+
+  const d = lerFormOcorrencia();
+
+  if (!d.data) { toast("Informe a data.", "erro"); return $("oc_data").focus(); }
+  if (!d.motorista) { toast("Informe o motorista.", "erro"); return $("oc_motorista").focus(); }
+  if (!d.texto) { toast("Descreva a ocorrência.", "erro"); return $("oc_texto").focus(); }
+
+  const btn = $("oc_print");
+  bloquearBotao(btn, "Preparando...");
+
+  try {
+    const imagens = [];
+    for (const f of Array.from($("oc_fotos").files)) imagens.push(await comprimirImagem(f));
+
+    ocPreparada = { dados: d, imagens };
+
+    const printView = $("print-view");
+    printView.innerHTML = htmlOcorrencia(d, imagens);
     $("app").style.display = "none";
     printView.style.display = "block";
     window.scrollTo(0, 0);
+  } catch (err) {
+    console.error(err);
+    alert("❌ Não foi possível preparar a visualização: " + err.message);
+  } finally {
+    desbloquearBotao(btn);
+  }
+};
+
+/* 2) CONFIRMAR E ENVIAR */
+async function confirmarOcorrencia() {
+  // 🔒 Bloqueio contra clique duplo
+  if (ocorrenciaProcessada || !ocPreparada) return;
+  ocorrenciaProcessada = true;
+
+  const btn = $("oc_confirmar");
+  bloquearBotao(btn, "Enviando...");
+  const { dados: d, imagens } = ocPreparada;
+
+  try {
+    const json = await postJSON(SHEETS_WEBAPP_URL, {
+      tipo: "ocorrencia_pdf",
+      incluirResumo: true,
+      ...d,
+      fotos: imagens,
+      dataNumeros: d.data.replaceAll("/", "")
+    });
+
+    if (json.status !== "ok") throw new Error(json.message || "Erro ao salvar PDF");
+
+    registrarHistorico(d.motorista, d.localEmb);
+    toast("✅ Ocorrência enviada com sucesso.", "ok");
+
+    // Troca os botões: agora pode imprimir ou registrar outra
+    $("oc_acoes").innerHTML = `
+      <button class="btn-primary" onclick="window.print()">Imprimir</button>
+      <button onclick="novaOcorrencia()">Voltar</button>`;
+    $("oc_aviso").className = "aviso-ok";
+    $("oc_aviso").innerHTML = "✅ Ocorrência <strong>enviada</strong> com sucesso.";
 
     // Limpa o formulário para a próxima ocorrência (mantém data, De e Para)
     ["oc_horario","oc_ordem","oc_local","oc_hora","oc_motorista","oc_paxs","oc_texto"]
       .forEach(id => $(id).value = "");
     $("oc_fotos").value = "";
     $("oc_fotos_info").textContent = "";
+    ocPreparada = null;
 
   } catch (err) {
     console.error(err);
-    alert("❌ Erro ao processar ocorrência: " + err.message + "\n\nOs dados continuam no formulário. Tente de novo.");
+    alert("❌ Erro ao enviar ocorrência: " + err.message + "\n\nNada foi perdido. Tente enviar de novo ou toque em Editar.");
+    desbloquearBotao(btn);
   } finally {
     ocorrenciaProcessada = false;
-    desbloquearBotao(btn);
   }
-};
+}
 
 
 /* ==========================
