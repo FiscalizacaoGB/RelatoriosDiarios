@@ -13,23 +13,26 @@
   <link rel="apple-touch-icon" href="logo.png" />
 
   <style>
-    :root { --bg:#0b2545; --card:#ffffff; --muted:#6b7280; }
+    :root { --bg:#0b2545; --card:#ffffff; --muted:#6b7280; --borda:#d1d5db; }
     * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif; }
     html, body { height: 100%; }
     body { margin:0; background:#f3f4f6; color:#111827; }
 
-    header { background:var(--bg); color:#fff; padding:10px 16px 0 16px; }
+    header { background:var(--bg); color:#fff; padding:10px 16px 0 16px; position:sticky; top:0; z-index:10; }
     .brand { display:flex; align-items:center; gap:12px; }
     .logo { height:44px; user-select: none; }
     h1 { margin:0; font-size:20px; }
+    h2 { margin:0 0 12px 0; font-size:20px; }
+    h3 { margin:0 0 12px 0; font-size:17px; }
 
     /* Tabs */
-    .tabs { margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
+    .tabs { margin-top:8px; display:flex; gap:4px; overflow-x:auto; }
     .tab {
-      background:transparent; border:none; padding:8px 12px;
-      color:#e5e7eb; cursor:pointer; font-size:14px;
-      border-bottom:2px solid transparent;
+      background:transparent; border:none; padding:10px 12px; min-height:auto;
+      color:#e5e7eb; cursor:pointer; font-size:14px; white-space:nowrap;
+      border-bottom:3px solid transparent; border-radius:0;
     }
+    .tab:hover { background:transparent; }
     .tab.active { border-bottom-color:#facc15; color:#facc15; font-weight:600; }
 
     main { padding:16px; max-width:1000px; margin:0 auto; }
@@ -38,36 +41,65 @@
       padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.06); margin-bottom:16px;
     }
 
-    .row { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
-    .row label { width:180px; color:var(--muted); }
-    .row input, select, textarea {
-      flex:1; padding:10px 12px; border:1px solid #e5e7eb;
-      border-radius:10px; background:#fff;
+    input, select, textarea {
+      width:100%; padding:10px 12px; border:1px solid var(--borda);
+      border-radius:10px; background:#fff; font-size:16px; color:#111827;
     }
+    input:focus, select:focus, textarea:focus { outline:2px solid #93c5fd; border-color:#3b82f6; }
+    input[readonly] { background:#f9fafb; color:#374151; }
+
+    .row { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+    .row label { width:180px; flex-shrink:0; color:var(--muted); }
+    .row input, .row select, .row textarea { flex:1; }
 
     .grid {
       display:grid; grid-template-columns: repeat(2,minmax(0,1fr));
       gap:12px; margin-bottom:12px;
     }
+    .grid label { display:block; font-size:13px; color:var(--muted); margin-bottom:4px; }
 
     button {
-      padding:8px 12px; border-radius:10px; border:1px solid #d1d5db;
-      background:#fff; cursor:pointer; font-size:13px;
+      padding:10px 14px; min-height:44px; border-radius:10px; border:1px solid var(--borda);
+      background:#fff; cursor:pointer; font-size:14px;
     }
     button:hover { background:#f9fafb; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .btn-primary { background:var(--bg); color:#fff; border-color:var(--bg); font-weight:600; }
+    .btn-primary:hover { background:#13366a; }
 
+    .acoes-form { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+
+    .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -4px; }
     table { width:100%; border-collapse: collapse; }
     th, td {
       padding:8px 10px; border-bottom:1px solid #e5e7eb;
-      white-space:nowrap;
+      white-space:nowrap; text-align:left; font-size:14px;
     }
+    th { color:var(--muted); font-weight:600; font-size:13px; }
+    tr.editando td { background:#fef9c3; }
+    td.vazio { text-align:center; color:var(--muted); padding:20px; white-space:normal; }
+    td button { min-height:36px; padding:6px 10px; font-size:13px; }
 
-    .badge { background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius:999px; font-size:12px; }
-    .list-header { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .badge { background:#eef2ff; color:#3730a3; padding:2px 10px; border-radius:999px; font-size:13px; }
+    .list-header { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+    .list-header h2 { margin:0; }
     .delete { color:#b91c1c; border-color:#fecaca; }
     .edit   { color:#1d4ed8; border-color:#bfdbfe; }
+    .hint { color:var(--muted); font-size:13px; }
 
     footer { text-align:center; padding:24px; color:#6b7280; }
+
+    /* TOAST */
+    #toast {
+      position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
+      background:#111827; color:#fff; padding:12px 18px; border-radius:12px;
+      font-size:15px; box-shadow:0 8px 24px rgba(0,0,0,.2);
+      opacity:0; pointer-events:none; transition:all .25s; z-index:100;
+      max-width:calc(100% - 32px); text-align:center;
+    }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    #toast.erro { background:#b91c1c; }
+    #toast.ok { background:#15803d; }
 
     /* LOGIN */
     #login-screen {
@@ -75,16 +107,28 @@
       justify-content:center; padding:16px;
     }
     .login-card { max-width:420px; width:100%; }
+    .login-card button { width:100%; }
     .login-logo-wrapper { display:flex; justify-content:center; margin-bottom:12px; }
     .login-logo { height:64px; }
 
     /* PRINT VIEW CONTAINER */
-    #print-view { padding:24px; max-width:900px; margin:0 auto; }
+    #print-view { padding:24px; max-width:900px; margin:0 auto; background:#fff; min-height:100vh; }
+
+    /* CELULAR */
+    @media (max-width: 640px) {
+      main { padding:10px; }
+      .card { padding:14px; border-radius:12px; margin-bottom:10px; }
+      .row { flex-direction:column; align-items:stretch; gap:4px; }
+      .row label { width:auto; font-size:13px; }
+      .acoes-form button { flex:1; }
+      h2 { font-size:18px; }
+      #print-view { padding:14px; }
+    }
 
     @media print {
       body { background:#fff; }
-      #login-screen, #app { display:none !important; }
-      #print-view { display:block !important; }
+      #login-screen, #app, #toast { display:none !important; }
+      #print-view { display:block !important; padding:0; }
     }
   </style>
 </head>
@@ -114,10 +158,10 @@
 
     <div class="row">
       <label>PIN</label>
-      <input id="loginPin" type="password" placeholder="****" />
+      <input id="loginPin" type="password" inputmode="numeric" placeholder="****" />
     </div>
 
-    <button id="loginBtn">Entrar</button>
+    <button id="loginBtn" class="btn-primary">Entrar</button>
   </section>
 </div>
 
@@ -136,6 +180,10 @@
     </nav>
   </header>
 
+  <!-- Sugestões de preenchimento (motoristas e locais já usados) -->
+  <datalist id="lista_motoristas"></datalist>
+  <datalist id="lista_locais"></datalist>
+
   <!-- TELA RELATÓRIO DIÁRIO -->
   <main id="main-diario">
 
@@ -150,21 +198,24 @@
       </div>
     </section>
 
-    <section class="card">
-      <h2>Adicionar Linha</h2>
+    <section class="card" id="form-diario">
+      <h2 id="titulo-form-diario">Adicionar Linha</h2>
 
       <div class="grid">
         <div><label>De</label><select id="de"></select></div>
         <div><label>Para</label><select id="para"></select></div>
-        <div><label>Horário</label><input id="horario" /></div>
-        <div><label>Nº de Ordem</label><input id="ordem" /></div>
-        <div><label>Local Emb.</label><input id="local" /></div>
-        <div><label>Hora</label><input id="hora" /></div>
-        <div><label>Motorista</label><input id="motorista" /></div>
-        <div><label>Qtd. Paxs</label><input id="paxs" type="number" /></div>
+        <div><label>Horário</label><input id="horario" type="time" /></div>
+        <div><label>Nº de Ordem</label><input id="ordem" inputmode="numeric" /></div>
+        <div><label>Local Emb.</label><input id="local" list="lista_locais" autocomplete="off" /></div>
+        <div><label>Hora</label><input id="hora" type="time" /></div>
+        <div><label>Motorista</label><input id="motorista" list="lista_motoristas" autocomplete="off" /></div>
+        <div><label>Qtd. Paxs</label><input id="paxs" type="number" inputmode="numeric" min="0" /></div>
       </div>
 
-      <button id="add">Adicionar linha</button>
+      <div class="acoes-form">
+        <button id="add" class="btn-primary">Adicionar linha</button>
+        <button id="cancelarEdicao" style="display:none;">Cancelar edição</button>
+      </div>
     </section>
 
     <section class="card">
@@ -173,19 +224,21 @@
         <span id="count" class="badge">0</span>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>De</th><th>Para</th><th>Cód.De</th><th>Cód.Para</th>
-            <th>Horário</th><th>Nº Ordem</th><th>Local</th><th>Hora</th>
-            <th>Motorista</th><th>Paxs</th><th>Linha</th><th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tabela"></tbody>
-      </table>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>De</th><th>Para</th><th>Cód.De</th><th>Cód.Para</th>
+              <th>Horário</th><th>Nº Ordem</th><th>Local</th><th>Hora</th>
+              <th>Motorista</th><th>Paxs</th><th>Linha</th><th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela"></tbody>
+        </table>
+      </div>
 
-      <div class="row">
-        <button id="saveSheets">Salvar no Banco</button>
+      <div class="acoes-form" style="margin-top:12px;">
+        <button id="saveSheets" class="btn-primary">Salvar no Banco</button>
         <button id="export">Gerar CSV</button>
       </div>
     </section>
@@ -207,12 +260,12 @@
       <div class="grid">
         <div><label>De</label><select id="oc_de"></select></div>
         <div><label>Para</label><select id="oc_para"></select></div>
-        <div><label>Horário</label><input id="oc_horario"></div>
-        <div><label>Nº Ordem</label><input id="oc_ordem"></div>
-        <div><label>Local Emb.</label><input id="oc_local"></div>
-        <div><label>Hora</label><input id="oc_hora"></div>
-        <div><label>Motorista</label><input id="oc_motorista"></div>
-        <div><label>Paxs</label><input id="oc_paxs" type="number"></div>
+        <div><label>Horário</label><input id="oc_horario" type="time"></div>
+        <div><label>Nº Ordem</label><input id="oc_ordem" inputmode="numeric"></div>
+        <div><label>Local Emb.</label><input id="oc_local" list="lista_locais" autocomplete="off"></div>
+        <div><label>Hora</label><input id="oc_hora" type="time"></div>
+        <div><label>Motorista</label><input id="oc_motorista" list="lista_motoristas" autocomplete="off"></div>
+        <div><label>Paxs</label><input id="oc_paxs" type="number" inputmode="numeric" min="0"></div>
       </div>
     </section>
 
@@ -229,8 +282,14 @@
         <label>Fotos</label>
         <input id="oc_fotos" type="file" accept="image/*" multiple />
       </div>
+      <div class="row" style="margin-top:-6px;">
+        <label></label>
+        <span id="oc_fotos_info" class="hint"></span>
+      </div>
 
-      <button id="oc_print">Visualizar / Imprimir</button>
+      <div class="acoes-form">
+        <button id="oc_print" class="btn-primary">Salvar e Visualizar / Imprimir</button>
+      </div>
     </section>
 
   </main>
@@ -239,7 +298,7 @@
   <main id="main-os" style="display:none;">
 
     <section class="card">
-      <h2>OS - Manutenção</h2>
+      <h2 id="titulo-form-os">OS - Manutenção</h2>
 
       <div class="grid">
         <div>
@@ -252,7 +311,7 @@
         </div>
         <div>
           <label>Nº de ordem</label>
-          <input id="os_ordem" />
+          <input id="os_ordem" inputmode="numeric" />
         </div>
       </div>
 
@@ -261,7 +320,10 @@
         <textarea id="os_obs" rows="3" style="resize:vertical;"></textarea>
       </div>
 
-      <button id="os_add">Adicionar OS</button>
+      <div class="acoes-form">
+        <button id="os_add" class="btn-primary">Adicionar OS</button>
+        <button id="os_cancelarEdicao" style="display:none;">Cancelar edição</button>
+      </div>
     </section>
 
     <section class="card">
@@ -270,21 +332,23 @@
         <span id="os_count" class="badge">0</span>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Fiscal</th>
-            <th>Nº de ordem</th>
-            <th>Observação</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="os_tabela"></tbody>
-      </table>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Fiscal</th>
+              <th>Nº de ordem</th>
+              <th>Observação</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="os_tabela"></tbody>
+        </table>
+      </div>
 
-      <div class="row">
-        <button id="os_saveSheets">Salvar no Banco</button>
+      <div class="acoes-form" style="margin-top:12px;">
+        <button id="os_saveSheets" class="btn-primary">Salvar no Banco</button>
       </div>
     </section>
 
@@ -296,11 +360,15 @@
 <!-- CONTAINER DA VISUALIZAÇÃO / IMPRESSÃO -->
 <div id="print-view" style="display:none;"></div>
 
+<!-- AVISOS RÁPIDOS -->
+<div id="toast"></div>
+
 <script>
-  // FLAGS DE CONTROLE (OBRIGATÓRIO)
+// FLAGS DE CONTROLE (OBRIGATÓRIO)
 let relatorioEnviado = false;
 let osEnviado = false;
 let ocorrenciaProcessada = false;
+
 function bloquearBotao(btn, texto = "Carregando...") {
   btn.disabled = true;
   btn.dataset.originalText = btn.textContent;
@@ -312,6 +380,59 @@ function desbloquearBotao(btn) {
   if (btn.dataset.originalText) {
     btn.textContent = btn.dataset.originalText;
   }
+}
+
+/* ==========================
+   UTILITÁRIOS
+========================== */
+
+const $ = id => document.getElementById(id);
+
+// Evita que textos digitados quebrem a tabela (ex.: "<", "&")
+function esc(v) {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// Data de hoje no fuso do aparelho (valueAsDate usa UTC e, depois das 21h, mostrava o dia seguinte)
+function hojeISO() {
+  const d = new Date();
+  return d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+}
+
+let toastTimer;
+function toast(msg, tipo = "") {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show " + tipo;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ""; }, tipo === "erro" ? 4000 : 2500);
+}
+
+function lerStorage(chave, padrao) {
+  try {
+    const v = localStorage.getItem(chave);
+    return v ? JSON.parse(v) : padrao;
+  } catch (e) { return padrao; }
+}
+
+function gravarStorage(chave, valor) {
+  try { localStorage.setItem(chave, JSON.stringify(valor)); } catch (e) {}
+}
+
+// Envio padrão para o Apps Script (aceita resposta em JSON ou texto)
+async function postJSON(url, payload) {
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  });
+  const t = await r.text();
+  try { return JSON.parse(t); }
+  catch (e) { return { status: "error", message: t }; }
 }
 
 /* ==========================
@@ -343,49 +464,89 @@ const CODIGOS = {
 
 const CIDADES = ["Salvador", ...Object.keys(CODIGOS)];
 
+let fiscalAtual = null;
+
+/* ==========================
+   RASCUNHO (não perde dados se a página fechar)
+========================== */
+
+function chaveRascunho(tipo) { return "rascunho_" + tipo + "_" + (fiscalAtual ? fiscalAtual.id : ""); }
+function salvarRascunhoLinhas() { gravarStorage(chaveRascunho("linhas"), linhas); }
+function salvarRascunhoOS() { gravarStorage(chaveRascunho("os"), oss); }
+
+/* ==========================
+   SUGESTÕES (motoristas e locais já digitados)
+========================== */
+
+function registrarHistorico(motorista, local) {
+  [["hist_motoristas", motorista], ["hist_locais", local]].forEach(([chave, valor]) => {
+    valor = (valor || "").trim();
+    if (!valor) return;
+    let lista = lerStorage(chave, []);
+    lista = [valor, ...lista.filter(v => v.toLowerCase() !== valor.toLowerCase())].slice(0, 60);
+    gravarStorage(chave, lista);
+  });
+  atualizarSugestoes();
+}
+
+function atualizarSugestoes() {
+  [["lista_motoristas", "hist_motoristas"], ["lista_locais", "hist_locais"]].forEach(([idLista, chave]) => {
+    $(idLista).innerHTML = lerStorage(chave, [])
+      .map(v => `<option value="${esc(v)}"></option>`).join("");
+  });
+}
+
 /* ==========================
    LOGIN
 ========================== */
 
-document.getElementById("loginBtn").onclick = () => {
-  const id = document.getElementById("loginFiscal").value;
-  const pin = document.getElementById("loginPin").value;
+$("loginBtn").onclick = () => {
+  const id = $("loginFiscal").value;
+  const pin = $("loginPin").value;
 
   const user = FISCAIS.find(f => f.id === id);
   if (!user) return alert("Selecione um fiscal.");
   if (user.pin !== pin) return alert("PIN incorreto!");
 
-localStorage.setItem("fiscalId", user.id);
-localStorage.setItem("fiscalPin", pin);
+  localStorage.setItem("fiscalId", user.id);
+  localStorage.setItem("fiscalPin", pin);
 
   iniciarApp(user);
 };
 
+$("loginPin").addEventListener("keydown", e => {
+  if (e.key === "Enter") $("loginBtn").click();
+});
+
 function iniciarApp(user) {
-  document.getElementById("login-screen").style.display = "none";
-  document.getElementById("app").style.display = "block";
+  fiscalAtual = user;
 
-  document.getElementById("fiscal").value = user.name;
-  document.getElementById("oc_fiscal").value = user.name;
-  document.getElementById("os_fiscal").value = user.name;
+  $("login-screen").style.display = "none";
+  $("app").style.display = "block";
 
-  const hoje = new Date();
-  document.getElementById("data").valueAsDate = hoje;
-  document.getElementById("oc_data").valueAsDate = hoje;
-  document.getElementById("os_data").valueAsDate = hoje;
+  $("fiscal").value = user.name;
+  $("oc_fiscal").value = user.name;
+  $("os_fiscal").value = user.name;
+
+  const hoje = hojeISO();
+  $("data").value = hoje;
+  $("oc_data").value = hoje;
+  $("os_data").value = hoje;
 
   preencherSelects();
+  atualizarSugestoes();
+
+  // Recupera o que ficou sem salvar
+  linhas = lerStorage(chaveRascunho("linhas"), []);
+  oss = lerStorage(chaveRascunho("os"), []);
+  render();
+  renderOS();
+
+  const pend = [];
+  if (linhas.length) pend.push(linhas.length + " linha(s)");
+  if (oss.length) pend.push(oss.length + " OS");
+  if (pend.length) toast("Recuperado sem salvar: " + pend.join(" e "));
 }
-
-/* Auto login */
-const saved = localStorage.getItem("fiscalId");
-const savedPin = localStorage.getItem("fiscalPin");
-
-if (saved && savedPin) {
-  const user = FISCAIS.find(f => f.id === saved && f.pin === savedPin);
-  if (user) iniciarApp(user);
-}
-
 
 /* ==========================
    POPULAR SELECTS
@@ -393,7 +554,7 @@ if (saved && savedPin) {
 
 function preencherSelects() {
   ["de","para","oc_de","oc_para"].forEach(id => {
-    const sel = document.getElementById(id);
+    const sel = $(id);
     sel.innerHTML = "";
     CIDADES.forEach(c => {
       const op = document.createElement("option");
@@ -402,11 +563,11 @@ function preencherSelects() {
     });
   });
 
-  document.getElementById("de").value = "Salvador";
-  document.getElementById("para").value = "Camaçari";
+  $("de").value = "Salvador";
+  $("para").value = "Camaçari";
 
-  document.getElementById("oc_de").value = "Salvador";
-  document.getElementById("oc_para").value = "Camaçari";
+  $("oc_de").value = "Salvador";
+  $("oc_para").value = "Camaçari";
 }
 
 /* ==========================
@@ -414,41 +575,85 @@ function preencherSelects() {
 ========================== */
 
 let linhas = [];
+let editandoLinha = -1;
+
+// Campo do objeto -> id do input (corrige o erro do "Editar" com "Horário")
+const CAMPOS_DIARIO = {
+  De: "de", Para: "para", Horário: "horario", Ordem: "ordem",
+  Local: "local", Hora: "hora", Motorista: "motorista", Paxs: "paxs"
+};
 
 function getCod(c) { return CODIGOS[c] || ""; }
 function getLinha(de, para) { return getCod(de) || getCod(para); }
 
-document.getElementById("add").onclick = () => {
-  const l = {
-    De: document.getElementById("de").value,
-    Para: document.getElementById("para").value,
-    Horário: document.getElementById("horario").value,
-    Ordem: document.getElementById("ordem").value,
-    Local: document.getElementById("local").value,
-    Hora: document.getElementById("hora").value,
-    Motorista: document.getElementById("motorista").value,
-    Paxs: document.getElementById("paxs").value
-  };
-  linhas.unshift(l);
+function lerFormDiario() {
+  const l = {};
+  for (const [campo, id] of Object.entries(CAMPOS_DIARIO)) l[campo] = $(id).value.trim();
+  return l;
+}
+
+// Limpa só o que muda a cada viagem (mantém De, Para e Local Emb.)
+function limparFormDiario() {
+  ["horario","ordem","hora","motorista","paxs"].forEach(id => $(id).value = "");
+  editandoLinha = -1;
+  $("add").textContent = "Adicionar linha";
+  $("titulo-form-diario").textContent = "Adicionar Linha";
+  $("cancelarEdicao").style.display = "none";
+}
+
+$("add").onclick = () => {
+  const l = lerFormDiario();
+
+  if (l.De === l.Para) { toast("De e Para não podem ser iguais.", "erro"); return $("para").focus(); }
+  if (!l.Horário) { toast("Informe o horário.", "erro"); return $("horario").focus(); }
+  if (!l.Ordem) { toast("Informe o Nº de Ordem.", "erro"); return $("ordem").focus(); }
+
+  if (editandoLinha >= 0) {
+    linhas[editandoLinha] = l;
+    toast("Linha atualizada.", "ok");
+  } else {
+    linhas.unshift(l);
+    toast("Linha adicionada.", "ok");
+  }
+
+  registrarHistorico(l.Motorista, l.Local);
+  salvarRascunhoLinhas();
   render();
+  limparFormDiario();
+  $("horario").focus();
 };
 
+$("cancelarEdicao").onclick = () => { limparFormDiario(); render(); };
+
+// Enter em qualquer campo do formulário adiciona a linha
+document.querySelectorAll("#form-diario input").forEach(inp => {
+  inp.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); $("add").click(); }
+  });
+});
+
 function render() {
-  const tbody = document.getElementById("tabela");
+  const tbody = $("tabela");
   tbody.innerHTML = "";
-  linhas.forEach((l,i) => {
+
+  if (!linhas.length) {
+    tbody.innerHTML = `<tr><td colspan="12" class="vazio">Nenhuma linha adicionada.</td></tr>`;
+  }
+
+  linhas.forEach((l, i) => {
     const tr = document.createElement("tr");
+    if (i === editandoLinha) tr.className = "editando";
     tr.innerHTML = `
-      <td>${l.De}</td>
-      <td>${l.Para}</td>
+      <td>${esc(l.De)}</td>
+      <td>${esc(l.Para)}</td>
       <td>${getCod(l.De)}</td>
       <td>${getCod(l.Para)}</td>
-      <td>${l.Horário}</td>
-      <td>${l.Ordem}</td>
-      <td>${l.Local}</td>
-      <td>${l.Hora}</td>
-      <td>${l.Motorista}</td>
-      <td>${l.Paxs}</td>
+      <td>${esc(l.Horário)}</td>
+      <td>${esc(l.Ordem)}</td>
+      <td>${esc(l.Local)}</td>
+      <td>${esc(l.Hora)}</td>
+      <td>${esc(l.Motorista)}</td>
+      <td>${esc(l.Paxs)}</td>
       <td>${getLinha(l.De,l.Para)}</td>
       <td>
         <button class="edit">Editar</button>
@@ -457,86 +662,96 @@ function render() {
     `;
     tbody.appendChild(tr);
 
-    tr.querySelector(".delete").onclick = () => { linhas.splice(i,1); render(); };
+    tr.querySelector(".delete").onclick = () => {
+      if (!confirm(`Excluir a linha ${l.De} → ${l.Para} (${l.Horário})?`)) return;
+      linhas.splice(i, 1);
+      if (editandoLinha === i) limparFormDiario();
+      else if (editandoLinha > i) editandoLinha--;
+      salvarRascunhoLinhas();
+      render();
+    };
+
     tr.querySelector(".edit").onclick = () => {
-      ["De","Para","Horário","Ordem","Local","Hora","Motorista","Paxs"].forEach(campo => {
-        document.getElementById(campo.toLowerCase()).value = l[campo];
-      });
-      linhas.splice(i,1); render();
+      for (const [campo, id] of Object.entries(CAMPOS_DIARIO)) $(id).value = l[campo] ?? "";
+      editandoLinha = i;
+      $("add").textContent = "Salvar alteração";
+      $("titulo-form-diario").textContent = "Editando linha";
+      $("cancelarEdicao").style.display = "";
+      render();
+      $("form-diario").scrollIntoView({ behavior: "smooth" });
     };
   });
-  document.getElementById("count").textContent = linhas.length;
+
+  $("count").textContent = linhas.length;
 }
 
 /* ==========================
    CSV
 ========================== */
 
-document.getElementById("export").onclick = () => {
+$("export").onclick = () => {
+  if (!linhas.length) return toast("Nenhuma linha para exportar.", "erro");
+
   let out = "De;Para;Horario;Ordem;Local;Hora;Motorista;Paxs;Linha;Fiscal;Data\n";
-  const fiscal = document.getElementById("fiscal").value;
-  const data = document.getElementById("data").value;
+  const fiscal = $("fiscal").value;
+  const data = $("data").value;
 
   linhas.forEach(l => {
     out += [
       l.De,l.Para,l.Horário,l.Ordem,l.Local,l.Hora,l.Motorista,l.Paxs,
       getLinha(l.De,l.Para),
       fiscal, data
-    ].join(";") + "\n";
+    ].map(v => String(v ?? "").replace(/;/g, ",")).join(";") + "\n";
   });
 
-  const blob = new Blob([out], { type:"text/csv" });
+  // ﻿ faz o Excel abrir os acentos corretamente
+  const blob = new Blob(["﻿" + out], { type:"text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "relatorio_diario.csv";
+  a.download = "relatorio_diario_" + data + ".csv";
   a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 /* ==========================
    SALVAR NO SHEETS (RELATÓRIO DIÁRIO)
 ========================== */
 
-document.getElementById("saveSheets").onclick = () => {
+$("saveSheets").onclick = async () => {
   if (relatorioEnviado) return;
   if (!linhas.length) return alert("Nenhuma linha adicionada.");
+  if (editandoLinha >= 0) return alert("Termine ou cancele a edição antes de salvar.");
 
   relatorioEnviado = true;
+  const btn = $("saveSheets");
+  bloquearBotao(btn, "Enviando...");
 
-  const btn = document.getElementById("saveSheets");
-  bloquearBotao(btn);
-
-  const fiscal = document.getElementById("fiscal").value;
-  const data = document.getElementById("data").value;
+  const fiscal = $("fiscal").value;
+  const data = $("data").value;
 
   const rows = linhas.map(l => ([
     l.De, l.Para, l.Horário, l.Ordem, l.Local, l.Hora,
     l.Motorista, l.Paxs, getLinha(l.De,l.Para), fiscal, data
   ]));
 
-  fetch(SHEETS_WEBAPP_URL, {
-    method: "POST",
-    headers: {"Content-Type":"text/plain"},
-    body: JSON.stringify({ rows })
-  })
-  .then(r => r.json())
-  .then(j => {
+  try {
+    const j = await postJSON(SHEETS_WEBAPP_URL, { rows });
     if (j.status === "ok") {
-      alert("Enviado com sucesso!");
+      toast(rows.length + " linha(s) enviada(s) com sucesso!", "ok");
       linhas = [];
+      salvarRascunhoLinhas();
       render();
     } else {
-      alert("Erro: " + JSON.stringify(j));
-      relatorioEnviado = false;
-      desbloquearBotao(btn);
+      alert("Erro ao enviar: " + (j.message || JSON.stringify(j)) + "\n\nAs linhas continuam salvas no aparelho.");
     }
-  })
-  .catch(() => {
-    alert("Falha de comunicação");
+  } catch (e) {
+    alert("Falha de comunicação. Verifique a internet e tente de novo.\n\nAs linhas continuam salvas no aparelho.");
+  } finally {
     relatorioEnviado = false;
     desbloquearBotao(btn);
-  });
+  }
 };
 
 
@@ -545,38 +760,67 @@ document.getElementById("saveSheets").onclick = () => {
 ========================== */
 
 let oss = [];
+let editandoOS = -1;
 
-document.getElementById("os_add").onclick = () => {
+function limparFormOS() {
+  $("os_ordem").value = "";
+  $("os_obs").value = "";
+  $("os_fiscal").value = fiscalAtual ? fiscalAtual.name : $("os_fiscal").value;
+  editandoOS = -1;
+  $("os_add").textContent = "Adicionar OS";
+  $("titulo-form-os").textContent = "OS - Manutenção";
+  $("os_cancelarEdicao").style.display = "none";
+}
+
+$("os_add").onclick = () => {
   const os = {
-    Data: document.getElementById("os_data").value,
-    Fiscal: document.getElementById("os_fiscal").value,
-    Ordem: document.getElementById("os_ordem").value,
-    Obs: document.getElementById("os_obs").value
+    Data: $("os_data").value,
+    Fiscal: $("os_fiscal").value,
+    Ordem: $("os_ordem").value.trim(),
+    Obs: $("os_obs").value.trim()
   };
 
   if (!os.Data || !os.Ordem) {
-    alert("Preencha pelo menos Data e Nº de Ordem.");
+    toast("Preencha pelo menos Data e Nº de Ordem.", "erro");
     return;
   }
 
-  oss.unshift(os);
-  renderOS();
+  if (editandoOS >= 0) {
+    oss[editandoOS] = os;
+    toast("OS atualizada.", "ok");
+  } else {
+    oss.unshift(os);
+    toast("OS adicionada.", "ok");
+  }
 
-  document.getElementById("os_ordem").value = "";
-  document.getElementById("os_obs").value = "";
+  salvarRascunhoOS();
+  renderOS();
+  limparFormOS();
+  $("os_ordem").focus();
 };
 
+$("os_cancelarEdicao").onclick = () => { limparFormOS(); renderOS(); };
+
+$("os_ordem").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); $("os_obs").focus(); }
+});
+
 function renderOS() {
-  const tbody = document.getElementById("os_tabela");
+  const tbody = $("os_tabela");
   tbody.innerHTML = "";
+
+  if (!oss.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="vazio">Nenhuma OS adicionada.</td></tr>`;
+  }
 
   oss.forEach((os, i) => {
     const tr = document.createElement("tr");
+    if (i === editandoOS) tr.className = "editando";
     tr.innerHTML = `
-      <td>${os.Data}</td>
-      <td>${os.Fiscal}</td>
-      <td>${os.Ordem}</td>
-      <td style="white-space:normal; max-width:300px;">${os.Obs}</td>
+      <td>${esc(os.Data.split("-").reverse().join("/"))}</td>
+      <td>${esc(os.Fiscal)}</td>
+      <td>${esc(os.Ordem)}</td>
+      <td style="white-space:normal; min-width:200px; max-width:300px;">${esc(os.Obs)}</td>
       <td>
         <button class="edit">Editar</button>
         <button class="delete">Del</button>
@@ -585,62 +829,64 @@ function renderOS() {
     tbody.appendChild(tr);
 
     tr.querySelector(".delete").onclick = () => {
-      oss.splice(i,1);
+      if (!confirm(`Excluir a OS do carro ${os.Ordem}?`)) return;
+      oss.splice(i, 1);
+      if (editandoOS === i) limparFormOS();
+      else if (editandoOS > i) editandoOS--;
+      salvarRascunhoOS();
       renderOS();
     };
 
     tr.querySelector(".edit").onclick = () => {
-      document.getElementById("os_data").value = os.Data;
-      document.getElementById("os_fiscal").value = os.Fiscal;
-      document.getElementById("os_ordem").value = os.Ordem;
-      document.getElementById("os_obs").value = os.Obs;
-      oss.splice(i,1);
+      $("os_data").value = os.Data;
+      $("os_fiscal").value = os.Fiscal;
+      $("os_ordem").value = os.Ordem;
+      $("os_obs").value = os.Obs;
+      editandoOS = i;
+      $("os_add").textContent = "Salvar alteração";
+      $("titulo-form-os").textContent = "Editando OS";
+      $("os_cancelarEdicao").style.display = "";
       renderOS();
+      $("titulo-form-os").scrollIntoView({ behavior: "smooth" });
     };
   });
 
-  document.getElementById("os_count").textContent = oss.length;
+  $("os_count").textContent = oss.length;
 }
 
-document.getElementById("os_saveSheets").onclick = () => {
+$("os_saveSheets").onclick = async () => {
   if (osEnviado) return;
   if (!oss.length) return alert("Nenhuma OS adicionada.");
+  if (editandoOS >= 0) return alert("Termine ou cancele a edição antes de salvar.");
 
   osEnviado = true;
-
-  const btn = document.getElementById("os_saveSheets");
-  bloquearBotao(btn);
+  const btn = $("os_saveSheets");
+  bloquearBotao(btn, "Enviando...");
 
   const rows = oss.map(os => ([
     os.Data, os.Fiscal, os.Ordem, os.Obs
   ]));
 
-  fetch(OS_SHEETS_WEBAPP_URL, {
-    method: "POST",
-    headers: {"Content-Type":"text/plain"},
-    body: JSON.stringify({
-      fiscal: document.getElementById("os_fiscal").value,
+  try {
+    const j = await postJSON(OS_SHEETS_WEBAPP_URL, {
+      fiscal: $("os_fiscal").value,
       pin: localStorage.getItem("fiscalPin"),
       rows
-    })
-  })
-  .then(r => r.json())
-  .then(j => {
+    });
     if (j.status === "ok") {
-      alert("OS enviadas com sucesso!");
+      toast(rows.length + " OS enviada(s) com sucesso!", "ok");
       oss = [];
+      salvarRascunhoOS();
       renderOS();
     } else {
-      alert("Erro ao enviar OS");
-      osEnviado = false;
-      desbloquearBotao(btn);
+      alert("Erro ao enviar OS: " + (j.message || JSON.stringify(j)) + "\n\nAs OS continuam salvas no aparelho.");
     }
-  })
-  .catch(() => {
-    alert("Falha de comunicação");
+  } catch (e) {
+    alert("Falha de comunicação. Verifique a internet e tente de novo.\n\nAs OS continuam salvas no aparelho.");
+  } finally {
     osEnviado = false;
     desbloquearBotao(btn);
-  });
+  }
 };
 
 
@@ -655,179 +901,217 @@ document.querySelectorAll(".tab").forEach(btn => {
 
     const alvo = btn.dataset.target;
 
-    document.getElementById("main-diario").style.display =
-      (alvo === "diario" ? "block" : "none");
+    $("main-diario").style.display = (alvo === "diario" ? "block" : "none");
+    $("main-ocorrencia").style.display = (alvo === "ocorrencia" ? "block" : "none");
+    $("main-os").style.display = (alvo === "os" ? "block" : "none");
 
-    document.getElementById("main-ocorrencia").style.display =
-      (alvo === "ocorrencia" ? "block" : "none");
-
-    document.getElementById("main-os").style.display =
-      (alvo === "os" ? "block" : "none");
+    window.scrollTo(0, 0);
   };
 });
+
+/* ==========================
+   FOTOS DA OCORRÊNCIA
+========================== */
+
+$("oc_fotos").onchange = () => {
+  const n = $("oc_fotos").files.length;
+  $("oc_fotos_info").textContent = n ? n + " foto(s) selecionada(s)" : "";
+};
+
+// Reduz a foto (máx. 1280px, JPEG) para enviar rápido pelo 4G e caber no PDF
+function comprimirImagem(file, maxLado = 1280, qualidade = 0.7) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const fator = Math.min(1, maxLado / Math.max(img.width, img.height));
+      const w = Math.round(img.width * fator);
+      const h = Math.round(img.height * fator);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", qualidade));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Imagem inválida: " + file.name)); };
+    img.src = url;
+  });
+}
 
 /* ==========================
    VISUALIZAR / IMPRIMIR OCORRÊNCIA
 ========================== */
 
-document.getElementById("oc_print").onclick = async () => {
+function fecharVisualizacao() {
+  $("print-view").style.display = "none";
+  $("print-view").innerHTML = "";
+  $("app").style.display = "block";
+  window.scrollTo(0, 0);
+}
+
+$("oc_print").onclick = async () => {
 
   // 🔒 Bloqueio contra clique duplo
   if (ocorrenciaProcessada) return;
-  ocorrenciaProcessada = true;
 
-  const btn = document.getElementById("oc_print");
-  bloquearBotao(btn, "Gerando...");
+  const fiscal = $("oc_fiscal").value;
+  const dataValue = $("oc_data").value;
+  const data = dataValue ? dataValue.split("-").reverse().join("/") : "";
+
+  const de = $("oc_de").value;
+  const para = $("oc_para").value;
+  const horario = $("oc_horario").value;
+  const ordem = $("oc_ordem").value.trim();
+  const localEmb = $("oc_local").value.trim();
+  const hora = $("oc_hora").value;
+  const motorista = $("oc_motorista").value.trim();
+  const paxs = $("oc_paxs").value;
+  const texto = $("oc_texto").value.trim();
+
+  if (!data) { toast("Informe a data.", "erro"); return $("oc_data").focus(); }
+  if (!motorista) { toast("Informe o motorista.", "erro"); return $("oc_motorista").focus(); }
+  if (!texto) { toast("Descreva a ocorrência.", "erro"); return $("oc_texto").focus(); }
+
+  ocorrenciaProcessada = true;
+  const btn = $("oc_print");
+  bloquearBotao(btn, "Preparando fotos...");
 
   try {
-    const fiscal = document.getElementById("oc_fiscal").value;
-    const dataValue = document.getElementById("oc_data").value;
-    const data = dataValue ? dataValue.split("-").reverse().join("/") : "";
-
-    const de = document.getElementById("oc_de").value;
-    const para = document.getElementById("oc_para").value;
-    const horario = document.getElementById("oc_horario").value;
-    const ordem = document.getElementById("oc_ordem").value;
-    const localEmb = document.getElementById("oc_local").value;
-    const hora = document.getElementById("oc_hora").value;
-    const motorista = document.getElementById("oc_motorista").value;
-    const paxs = document.getElementById("oc_paxs").value;
-    const texto = document.getElementById("oc_texto").value;
+    /* ==========================
+       FOTOS
+    ========================== */
+    const arquivos = Array.from($("oc_fotos").files);
+    const imagens = [];
+    for (const f of arquivos) imagens.push(await comprimirImagem(f));
 
     /* ==========================
-       SALVAR PDF DA OCORRÊNCIA
+       SALVAR PDF + RESUMO (um único envio)
     ========================== */
-    const resp = await fetch(SHEETS_WEBAPP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        tipo: "ocorrencia_pdf",
-        fiscal,
-        data,
-        de,
-        para,
-        horario,
-        ordem,
-        localEmb,
-        hora,
-        motorista,
-        paxs,
-        texto,
-        dataNumeros: data.replaceAll("/", "")
-      })
+    btn.textContent = "Salvando...";
+
+    const json = await postJSON(SHEETS_WEBAPP_URL, {
+      tipo: "ocorrencia_pdf",
+      incluirResumo: true,
+      fiscal,
+      data,
+      de,
+      para,
+      horario,
+      ordem,
+      localEmb,
+      hora,
+      motorista,
+      paxs,
+      texto,
+      fotos: imagens,
+      dataNumeros: data.replaceAll("/", "")
     });
 
-    const json = await resp.json();
-    if (json.status !== "ok") throw new Error("Erro ao salvar PDF");
-    alert("✅ Ocorrência salva com sucesso.");
+    if (json.status !== "ok") throw new Error(json.message || "Erro ao salvar PDF");
 
-
-    /* ==========================
-       SALVAR RESUMO DA OCORRÊNCIA
-    ========================== */
-    await fetch(SHEETS_WEBAPP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        tipo: "resumo_ocorrencia",
-        rows: [[data, motorista, texto, "Não Tratado"]]
-      })
-    });
+    registrarHistorico(motorista, localEmb);
+    toast("✅ Ocorrência salva com sucesso.", "ok");
 
     /* ==========================
        MONTAR VISUALIZAÇÃO
     ========================== */
-    const fotosInput = document.getElementById("oc_fotos");
-    let imagens = [];
-
-    if (fotosInput.files.length) {
-      imagens = await Promise.all(
-        Array.from(fotosInput.files).map(file =>
-          new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = e => resolve(e.target.result);
-            reader.readAsDataURL(file);
-          })
-        )
-      );
-    }
-
     const fotosHTML = imagens.map(src =>
-      `<img src="${src}" style="max-width:100%; margin-top:8px;">`
+      `<img src="${src}" style="max-width:100%; margin-top:8px; display:block;">`
     ).join("");
 
-    const printView = document.getElementById("print-view");
-    printView.style.display = "block";
+    const printView = $("print-view");
 
-  printView.innerHTML = `
+    printView.innerHTML = `
   <style>
-  body, table {
-  font-family: Arial, sans-serif;
-}
-
-    h1 { font-size:20px; margin-bottom:8px; }
-    h2 { font-size:16px; margin-top:16px; margin-bottom:8px; }
-    table { width:100%; border-collapse:collapse; margin-top:8px; }
-    td { border:1px solid #ccc; padding:6px 8px; font-size:13px; }
-    td.label { width:160px; font-weight:bold; white-space:nowrap; }
-    .bloco { margin-top:12px; font-size:13px; }
-    .assinatura { margin-top:40px; }
-    .assinatura span {
+    #print-view, #print-view table { font-family: Arial, sans-serif; }
+    #print-view h1 { font-size:20px; margin-bottom:8px; }
+    #print-view h2 { font-size:16px; margin-top:16px; margin-bottom:8px; }
+    #print-view table { width:100%; border-collapse:collapse; margin-top:8px; }
+    #print-view td { border:1px solid #ccc; padding:6px 8px; font-size:13px; white-space:normal; }
+    #print-view td.label { width:160px; font-weight:bold; white-space:nowrap; }
+    #print-view .bloco { margin-top:12px; font-size:13px; }
+    #print-view .assinatura { margin-top:40px; }
+    #print-view .assinatura span {
       border-top:1px solid #000;
       padding-top:4px;
       display:inline-block;
       min-width:240px;
     }
-    .acoes { margin-top:20px; }
+    #print-view .acoes { margin-bottom:20px; display:flex; gap:8px; flex-wrap:wrap; }
     @media print {
-      .acoes { display:none; }
+      #print-view .acoes { display:none; }
     }
   </style>
 
+  <div class="acoes">
+    <button class="btn-primary" onclick="window.print()">Imprimir</button>
+    <button onclick="fecharVisualizacao()">Voltar</button>
+  </div>
+
   <h1>Registro de Ocorrência - Fiscalização</h1>
 
-  <div><strong>Fiscal:</strong> ${fiscal}</div>
-  <div><strong>Data:</strong> ${data}</div>
+  <div><strong>Fiscal:</strong> ${esc(fiscal)}</div>
+  <div><strong>Data:</strong> ${esc(data)}</div>
 
   <h2>Dados da Viagem</h2>
   <table>
-    <tr><td class="label">De</td><td>${de}</td></tr>
-    <tr><td class="label">Para</td><td>${para}</td></tr>
-    <tr><td class="label">Horário</td><td>${horario}</td></tr>
-    <tr><td class="label">Nº de Ordem</td><td>${ordem}</td></tr>
-    <tr><td class="label">Local Embarque</td><td>${localEmb}</td></tr>
-    <tr><td class="label">Hora</td><td>${hora}</td></tr>
-    <tr><td class="label">Motorista</td><td>${motorista}</td></tr>
-    <tr><td class="label">Qtd. Paxs</td><td>${paxs}</td></tr>
+    <tr><td class="label">De</td><td>${esc(de)}</td></tr>
+    <tr><td class="label">Para</td><td>${esc(para)}</td></tr>
+    <tr><td class="label">Horário</td><td>${esc(horario)}</td></tr>
+    <tr><td class="label">Nº de Ordem</td><td>${esc(ordem)}</td></tr>
+    <tr><td class="label">Local Embarque</td><td>${esc(localEmb)}</td></tr>
+    <tr><td class="label">Hora</td><td>${esc(hora)}</td></tr>
+    <tr><td class="label">Motorista</td><td>${esc(motorista)}</td></tr>
+    <tr><td class="label">Qtd. Paxs</td><td>${esc(paxs)}</td></tr>
   </table>
 
   <h2>Descrição da Ocorrência</h2>
   <div class="bloco">
-    ${texto.replace(/\n/g, "<br>")}
+    ${esc(texto).replace(/\n/g, "<br>")}
   </div>
 
   ${fotosHTML ? `<h2>Fotos</h2>${fotosHTML}` : ""}
 
   <div class="assinatura">
-    <span>${fiscal}</span><br>
+    <span>${esc(fiscal)}</span><br>
     <small>Fiscal</small>
-  </div>
-
-  <div class="acoes">
-    <button onclick="window.print()">Imprimir</button>
-    <button onclick="document.getElementById('print-view').style.display='none'">Voltar</button>
   </div>
 `;
 
+    // Abre a visualização no topo, no lugar do app
+    $("app").style.display = "none";
+    printView.style.display = "block";
+    window.scrollTo(0, 0);
+
+    // Limpa o formulário para a próxima ocorrência (mantém data, De e Para)
+    ["oc_horario","oc_ordem","oc_local","oc_hora","oc_motorista","oc_paxs","oc_texto"]
+      .forEach(id => $(id).value = "");
+    $("oc_fotos").value = "";
+    $("oc_fotos_info").textContent = "";
+
   } catch (err) {
     console.error(err);
-    alert("❌ Erro ao processar ocorrência");
-
+    alert("❌ Erro ao processar ocorrência: " + err.message + "\n\nOs dados continuam no formulário. Tente de novo.");
+  } finally {
     ocorrenciaProcessada = false;
     desbloquearBotao(btn);
   }
 };
 
+
+/* ==========================
+   AUTO LOGIN
+   (fica no fim para que todas as funções e listas já existam)
+========================== */
+
+const saved = localStorage.getItem("fiscalId");
+const savedPin = localStorage.getItem("fiscalPin");
+
+if (saved && savedPin) {
+  const user = FISCAIS.find(f => f.id === saved && f.pin === savedPin);
+  if (user) iniciarApp(user);
+}
 
 /* ==========================
    SERVICE WORKER
