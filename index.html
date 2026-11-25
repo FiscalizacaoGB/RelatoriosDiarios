@@ -87,6 +87,30 @@
     .edit   { color:#1d4ed8; border-color:#bfdbfe; }
     .hint { color:var(--muted); font-size:13px; }
 
+    /* MEU DESEMPENHO */
+    .kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:16px; }
+    .kpi { background:#fff; border-radius:14px; padding:14px; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    .kpi .rotulo { font-size:13px; color:var(--muted); }
+    .kpi .valor { font-size:28px; font-weight:700; margin-top:4px; }
+    .kpi .detalhe { font-size:12px; color:var(--muted); margin-top:4px; line-height:1.35; }
+    .lembrete {
+      background:#eff6ff; border:1px solid #bfdbfe; color:#1e3a8a;
+      border-radius:12px; padding:12px 14px; margin-bottom:16px; font-size:15px; line-height:1.4;
+    }
+    .equipe-txt { font-size:15px; line-height:1.5; margin:0; }
+    .barras-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .barras { display:flex; gap:3px; height:170px; }
+    .barras.dias { min-width:560px; }
+    .barra { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; }
+    .barra .v { font-size:11px; color:#374151; height:15px; }
+    .barra .trilho { flex:1; width:100%; display:flex; align-items:flex-end; justify-content:center; border-bottom:1px solid #e5e7eb; }
+    .barra .b { width:100%; max-width:28px; background:#1f4e8c; border-radius:4px 4px 0 0; }
+    .barra .r { font-size:10px; color:var(--muted); margin-top:4px; white-space:nowrap; }
+    @media (max-width: 640px) {
+      .kpi .valor { font-size:24px; }
+      .kpis { grid-template-columns:repeat(2, minmax(0,1fr)); }
+    }
+
     footer { text-align:center; padding:24px; color:#6b7280; }
 
     /* TOAST */
@@ -176,7 +200,7 @@
     <nav class="tabs">
       <button class="tab active" data-target="diario">Relatório Diário</button>
       <button class="tab" data-target="ocorrencia">Registro de Ocorrência</button>
-      <button class="tab" data-target="os">OS - Manutenção</button>
+      <button class="tab" data-target="desempenho">Meu desempenho</button>
     </nav>
   </header>
 
@@ -294,62 +318,44 @@
 
   </main>
 
-  <!-- TELA OS - MANUTENÇÃO -->
-  <main id="main-os" style="display:none;">
-
-    <section class="card">
-      <h2 id="titulo-form-os">OS - Manutenção</h2>
-
-      <div class="grid">
-        <div>
-          <label>Data</label>
-          <input id="os_data" type="date" />
-        </div>
-        <div>
-          <label>Fiscal</label>
-          <input id="os_fiscal" readonly />
-        </div>
-        <div>
-          <label>Nº de ordem</label>
-          <input id="os_ordem" inputmode="numeric" />
-        </div>
-      </div>
-
-      <div class="row" style="align-items:flex-start;">
-        <label>Observação</label>
-        <textarea id="os_obs" rows="3" style="resize:vertical;"></textarea>
-      </div>
-
-      <div class="acoes-form">
-        <button id="os_add" class="btn-primary">Adicionar OS</button>
-        <button id="os_cancelarEdicao" style="display:none;">Cancelar edição</button>
-      </div>
-    </section>
+  <!-- TELA MEU DESEMPENHO -->
+  <main id="main-desempenho" style="display:none;">
 
     <section class="card">
       <div class="list-header">
-        <h2>OS cadastradas</h2>
-        <span id="os_count" class="badge">0</span>
+        <h2>Meu desempenho</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input id="dp_mes" type="month" style="width:auto;" />
+          <button id="dp_atualizar">Atualizar</button>
+        </div>
       </div>
+      <p class="hint" id="dp_status" style="margin:0;"></p>
+    </section>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Fiscal</th>
-              <th>Nº de ordem</th>
-              <th>Observação</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="os_tabela"></tbody>
-        </table>
-      </div>
+    <div class="lembrete" id="dp_lembrete" style="display:none;"></div>
 
-      <div class="acoes-form" style="margin-top:12px;">
-        <button id="os_saveSheets" class="btn-primary">Salvar no Banco</button>
-      </div>
+    <div class="kpis">
+      <div class="kpi"><div class="rotulo">Veículos fiscalizados</div><div class="valor" id="dp_veic">–</div><div class="detalhe" id="dp_veic_det"></div></div>
+      <div class="kpi"><div class="rotulo">Dias com relatório</div><div class="valor" id="dp_dias">–</div><div class="detalhe" id="dp_dias_det"></div></div>
+      <div class="kpi"><div class="rotulo">Carros diferentes</div><div class="valor" id="dp_carros">–</div><div class="detalhe">nº de ordem distintos</div></div>
+      <div class="kpi"><div class="rotulo">Passageiros contados</div><div class="valor" id="dp_paxs">–</div><div class="detalhe">soma de Qtd. Paxs</div></div>
+      <div class="kpi"><div class="rotulo">Ocorrências registradas</div><div class="valor" id="dp_oc">–</div><div class="detalhe" id="dp_oc_det"></div></div>
+    </div>
+
+    <section class="card">
+      <h3>Seus veículos fiscalizados por dia</h3>
+      <div class="barras-wrap"><div class="barras dias" id="dp_g_dia"></div></div>
+    </section>
+
+    <section class="card">
+      <h3>Seus horários fiscalizados</h3>
+      <p class="hint" style="margin-top:-6px;">Viagens fiscalizadas por faixa de horário</p>
+      <div class="barras-wrap"><div class="barras" id="dp_g_hora"></div></div>
+    </section>
+
+    <section class="card">
+      <h3>Equipe de fiscalização</h3>
+      <p class="equipe-txt" id="dp_equipe"></p>
     </section>
 
   </main>
@@ -366,7 +372,6 @@
 <script>
 // FLAGS DE CONTROLE (OBRIGATÓRIO)
 let relatorioEnviado = false;
-let osEnviado = false;
 let ocorrenciaProcessada = false;
 
 function bloquearBotao(btn, texto = "Carregando...") {
@@ -442,9 +447,6 @@ async function postJSON(url, payload) {
 const SHEETS_WEBAPP_URL =
   "https://script.google.com/macros/s/AKfycbwppmMfiEuUhfwjWUOmne3MsznX7w4ztoTm8FZgcSxNEceWAiaY-31M7rVvXUkl8gfB/exec";
 
-const OS_SHEETS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbxPC3JLFZm0w6cM42UTRc_KWHLXVyLjWBI4P89saGEHsac4g1BusgsHhP77H6JVo4Db/exec";
-
 const FISCAIS = [
   { id: "Lucas", name: "Lucas Ribeiro", pin: "1993" },
   { id: "Vilcemar", name: "Vilcemar", pin: "1000" },
@@ -472,7 +474,6 @@ let fiscalAtual = null;
 
 function chaveRascunho(tipo) { return "rascunho_" + tipo + "_" + (fiscalAtual ? fiscalAtual.id : ""); }
 function salvarRascunhoLinhas() { gravarStorage(chaveRascunho("linhas"), linhas); }
-function salvarRascunhoOS() { gravarStorage(chaveRascunho("os"), oss); }
 
 /* ==========================
    SUGESTÕES (motoristas e locais já digitados)
@@ -526,26 +527,20 @@ function iniciarApp(user) {
 
   $("fiscal").value = user.name;
   $("oc_fiscal").value = user.name;
-  $("os_fiscal").value = user.name;
 
   const hoje = hojeISO();
   $("data").value = hoje;
   $("oc_data").value = hoje;
-  $("os_data").value = hoje;
+  $("dp_mes").value = hoje.slice(0, 7);
 
   preencherSelects();
   atualizarSugestoes();
 
   // Recupera o que ficou sem salvar
   linhas = lerStorage(chaveRascunho("linhas"), []);
-  oss = lerStorage(chaveRascunho("os"), []);
   render();
-  renderOS();
 
-  const pend = [];
-  if (linhas.length) pend.push(linhas.length + " linha(s)");
-  if (oss.length) pend.push(oss.length + " OS");
-  if (pend.length) toast("Recuperado sem salvar: " + pend.join(" e "));
+  if (linhas.length) toast("Recuperado sem salvar: " + linhas.length + " linha(s)");
 }
 
 /* ==========================
@@ -756,139 +751,165 @@ $("saveSheets").onclick = async () => {
 
 
 /* ==========================
-   OS - MANUTENÇÃO
+   MEU DESEMPENHO
+   (cada fiscal vê só os próprios números + o total da equipe)
 ========================== */
 
-let oss = [];
-let editandoOS = -1;
+let desempenhoCarregado = false;
 
-function limparFormOS() {
-  $("os_ordem").value = "";
-  $("os_obs").value = "";
-  $("os_fiscal").value = fiscalAtual ? fiscalAtual.name : $("os_fiscal").value;
-  editandoOS = -1;
-  $("os_add").textContent = "Adicionar OS";
-  $("titulo-form-os").textContent = "OS - Manutenção";
-  $("os_cancelarEdicao").style.display = "none";
+function isoDe(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function deISO(s) { const [a, m, d] = s.split("-").map(Number); return new Date(a, m - 1, d, 12); }
+function somaDias(s, n) { const d = deISO(s); d.setDate(d.getDate() + n); return isoDe(d); }
+function difDias(a, b) { return Math.round((deISO(b) - deISO(a)) / 86400000); }
+function nomeMes(mes) {
+  const [a, m] = mes.split("-").map(Number);
+  return new Date(a, m - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+}
+// Aceita "08:30", "8h", "8h30", "0830" -> hora (0-23)
+function horaDe(txt) {
+  const m = String(txt || "").trim().match(/^(\d{1,2})\s*[:hH.]?\s*(\d{2})?/);
+  if (!m) return null;
+  const h = Number(m[1]);
+  return h >= 0 && h <= 23 ? h : null;
+}
+function num(n) { return Number(n).toLocaleString("pt-BR"); }
+
+function barrasHTML(rotulos, valores) {
+  const max = Math.max(1, ...valores);
+  return rotulos.map((r, i) => `
+    <div class="barra" title="${esc(r)}: ${valores[i]}">
+      <span class="v">${valores[i] || ""}</span>
+      <div class="trilho"><div class="b" style="height:${(valores[i] / max * 100).toFixed(1)}%"></div></div>
+      <span class="r">${esc(r)}</span>
+    </div>`).join("");
 }
 
-$("os_add").onclick = () => {
-  const os = {
-    Data: $("os_data").value,
-    Fiscal: $("os_fiscal").value,
-    Ordem: $("os_ordem").value.trim(),
-    Obs: $("os_obs").value.trim()
-  };
+async function carregarDesempenho() {
+  const mes = $("dp_mes").value;
+  if (!mes || !fiscalAtual) return;
 
-  if (!os.Data || !os.Ordem) {
-    toast("Preencha pelo menos Data e Nº de Ordem.", "erro");
-    return;
-  }
+  const hoje = hojeISO();
+  const [a, m] = mes.split("-").map(Number);
+  const inicioMesAnterior = isoDe(new Date(a, m - 2, 1, 12));
+  const fimMes = isoDe(new Date(a, m, 0, 12));
+  // Mês escolhido + mês anterior (comparação) + últimos 7 dias (lembrete)
+  const inicio = [inicioMesAnterior, somaDias(hoje, -8)].sort()[0];
+  const fim = [fimMes, hoje].sort()[1];
 
-  if (editandoOS >= 0) {
-    oss[editandoOS] = os;
-    toast("OS atualizada.", "ok");
-  } else {
-    oss.unshift(os);
-    toast("OS adicionada.", "ok");
-  }
-
-  salvarRascunhoOS();
-  renderOS();
-  limparFormOS();
-  $("os_ordem").focus();
-};
-
-$("os_cancelarEdicao").onclick = () => { limparFormOS(); renderOS(); };
-
-$("os_ordem").addEventListener("keydown", e => {
-  if (e.key === "Enter") { e.preventDefault(); $("os_obs").focus(); }
-});
-
-function renderOS() {
-  const tbody = $("os_tabela");
-  tbody.innerHTML = "";
-
-  if (!oss.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="vazio">Nenhuma OS adicionada.</td></tr>`;
-  }
-
-  oss.forEach((os, i) => {
-    const tr = document.createElement("tr");
-    if (i === editandoOS) tr.className = "editando";
-    tr.innerHTML = `
-      <td>${esc(os.Data.split("-").reverse().join("/"))}</td>
-      <td>${esc(os.Fiscal)}</td>
-      <td>${esc(os.Ordem)}</td>
-      <td style="white-space:normal; min-width:200px; max-width:300px;">${esc(os.Obs)}</td>
-      <td>
-        <button class="edit">Editar</button>
-        <button class="delete">Del</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-
-    tr.querySelector(".delete").onclick = () => {
-      if (!confirm(`Excluir a OS do carro ${os.Ordem}?`)) return;
-      oss.splice(i, 1);
-      if (editandoOS === i) limparFormOS();
-      else if (editandoOS > i) editandoOS--;
-      salvarRascunhoOS();
-      renderOS();
-    };
-
-    tr.querySelector(".edit").onclick = () => {
-      $("os_data").value = os.Data;
-      $("os_fiscal").value = os.Fiscal;
-      $("os_ordem").value = os.Ordem;
-      $("os_obs").value = os.Obs;
-      editandoOS = i;
-      $("os_add").textContent = "Salvar alteração";
-      $("titulo-form-os").textContent = "Editando OS";
-      $("os_cancelarEdicao").style.display = "";
-      renderOS();
-      $("titulo-form-os").scrollIntoView({ behavior: "smooth" });
-    };
-  });
-
-  $("os_count").textContent = oss.length;
-}
-
-$("os_saveSheets").onclick = async () => {
-  if (osEnviado) return;
-  if (!oss.length) return alert("Nenhuma OS adicionada.");
-  if (editandoOS >= 0) return alert("Termine ou cancele a edição antes de salvar.");
-
-  osEnviado = true;
-  const btn = $("os_saveSheets");
-  bloquearBotao(btn, "Enviando...");
-
-  const rows = oss.map(os => ([
-    os.Data, os.Fiscal, os.Ordem, os.Obs
-  ]));
+  const btn = $("dp_atualizar");
+  bloquearBotao(btn, "Carregando...");
+  $("dp_status").textContent = "Carregando seus números...";
 
   try {
-    const j = await postJSON(OS_SHEETS_WEBAPP_URL, {
-      fiscal: $("os_fiscal").value,
-      pin: localStorage.getItem("fiscalPin"),
-      rows
-    });
-    if (j.status === "ok") {
-      toast(rows.length + " OS enviada(s) com sucesso!", "ok");
-      oss = [];
-      salvarRascunhoOS();
-      renderOS();
-    } else {
-      alert("Erro ao enviar OS: " + (j.message || JSON.stringify(j)) + "\n\nAs OS continuam salvas no aparelho.");
-    }
+    const [rel, oc] = await Promise.all([
+      fetch(`${SHEETS_WEBAPP_URL}?aba=relatorio&inicio=${inicio}&fim=${fim}`).then(r => r.json()),
+      fetch(`${SHEETS_WEBAPP_URL}?aba=Resumo_ocorrencias&mes=${mes}`).then(r => r.json()).catch(() => [])
+    ]);
+
+    if (rel.status !== "ok" || !Array.isArray(rel.linhas)) throw new Error(rel.message || "Resposta inválida");
+
+    renderDesempenho(rel.linhas, Array.isArray(oc) ? oc : [], mes, hoje);
+    desempenhoCarregado = true;
+
+    const agora = new Date();
+    $("dp_status").textContent = "Atualizado às " +
+      String(agora.getHours()).padStart(2, "0") + ":" + String(agora.getMinutes()).padStart(2, "0");
   } catch (e) {
-    alert("Falha de comunicação. Verifique a internet e tente de novo.\n\nAs OS continuam salvas no aparelho.");
+    console.error(e);
+    $("dp_status").textContent = "Não foi possível carregar agora. Verifique a internet e toque em Atualizar.";
   } finally {
-    osEnviado = false;
     desbloquearBotao(btn);
   }
-};
+}
 
+function renderDesempenho(todas, ocorrencias, mes, hoje) {
+  const eu = fiscalAtual.name;
+  const [a, m] = mes.split("-").map(Number);
+  const diasNoMes = new Date(a, m, 0).getDate();
+  const mesAtual = hoje.slice(0, 7);
+  const ehMesAtual = mes === mesAtual;
+  const ehFuturo = mes > mesAtual;
+  const diasCorridos = ehMesAtual ? Number(hoje.slice(8, 10)) : (ehFuturo ? 0 : diasNoMes);
+
+  const minhas = todas.filter(l => l.Fiscal === eu);
+  const doMes = minhas.filter(l => l.Data.startsWith(mes));
+
+  // Comparação justa: mesmo período do mês anterior (ex.: dia 1 a 25 contra dia 1 a 25)
+  const mesAnt = isoDe(new Date(a, m - 2, 1, 12)).slice(0, 7);
+  const doAnt = minhas.filter(l => l.Data.startsWith(mesAnt) && Number(l.Data.slice(8, 10)) <= diasCorridos);
+
+  /* --- Lembrete (sempre neutro, olhando para hoje) --- */
+  const diasPostados = new Set(minhas.filter(l => l.Data <= hoje).map(l => l.Data));
+  const ultimo = [...diasPostados].sort().pop();
+  let ult7 = 0;
+  for (let i = 1; i <= 7; i++) if (diasPostados.has(somaDias(hoje, -i))) ult7++;
+
+  let quando = "";
+  if (ultimo) {
+    const d = difDias(ultimo, hoje);
+    quando = d === 0 ? "hoje" : d === 1 ? "ontem" : `há ${d} dias (${ultimo.split("-").reverse().join("/")})`;
+  }
+  $("dp_lembrete").style.display = "block";
+  $("dp_lembrete").innerHTML = ultimo
+    ? `Seu último relatório foi <strong>${quando}</strong>. Você postou em <strong>${ult7} dos últimos 7 dias</strong>.`
+    : `Ainda não encontramos relatórios seus nos últimos dias.`;
+
+  /* --- Indicadores --- */
+  const veic = doMes.length, ant = doAnt.length;
+  $("dp_veic").textContent = num(veic);
+  if (ehFuturo) {
+    $("dp_veic_det").textContent = "";
+  } else if (ant) {
+    const pct = Math.round((veic - ant) / ant * 100);
+    $("dp_veic_det").textContent =
+      (pct >= 0 ? `▲ ${pct}%` : `▼ ${Math.abs(pct)}%`) +
+      ` em relação ao mesmo período do mês passado (${num(ant)})`;
+  } else {
+    $("dp_veic_det").textContent = "Sem registros no mesmo período do mês passado";
+  }
+
+  const diasMes = new Set(doMes.map(l => l.Data)).size;
+  $("dp_dias").textContent = diasMes;
+  $("dp_dias_det").textContent = diasMes
+    ? `média de ${(veic / diasMes).toFixed(1).replace(".", ",")} veículos por dia`
+    : "";
+
+  $("dp_carros").textContent = num(new Set(doMes.map(l => l.Ordem).filter(Boolean)).size);
+  $("dp_paxs").textContent = num(doMes.reduce((s, l) => s + (Number(l.Paxs) || 0), 0));
+
+  const minhasOc = ocorrencias.filter(o => (o.Fiscal || "") === eu);
+  $("dp_oc").textContent = minhasOc.length;
+  $("dp_oc_det").textContent = "no mês selecionado";
+
+  /* --- Gráfico por dia --- */
+  const porDia = new Array(diasNoMes).fill(0);
+  doMes.forEach(l => porDia[Number(l.Data.slice(8, 10)) - 1]++);
+  $("dp_g_dia").innerHTML = barrasHTML(porDia.map((_, i) => String(i + 1).padStart(2, "0")), porDia);
+
+  /* --- Gráfico por horário --- */
+  const porHora = new Array(24).fill(0);
+  doMes.forEach(l => { const h = horaDe(l.Horario); if (h !== null) porHora[h]++; });
+  const usadas = porHora.map((v, i) => v ? i : -1).filter(i => i >= 0);
+  const hIni = usadas.length ? Math.min(...usadas) : 5;
+  const hFim = usadas.length ? Math.max(...usadas) : 22;
+  const horas = [];
+  for (let h = hIni; h <= hFim; h++) horas.push(h);
+  $("dp_g_hora").innerHTML = barrasHTML(horas.map(h => String(h).padStart(2, "0") + "h"), horas.map(h => porHora[h]));
+
+  /* --- Equipe --- */
+  const equipeMes = todas.filter(l => l.Data.startsWith(mes));
+  const fiscaisAtivos = new Set(equipeMes.map(l => l.Fiscal).filter(Boolean)).size;
+  const parte = equipeMes.length ? Math.round(veic / equipeMes.length * 100) : 0;
+  $("dp_equipe").innerHTML = equipeMes.length
+    ? `Em ${nomeMes(mes)}, a equipe fiscalizou <strong>${num(equipeMes.length)} veículos</strong>` +
+      ` (${fiscaisAtivos} fiscal(is) postando). Desse total, <strong>${num(veic)}</strong> foram fiscalizados por você (${parte}%).`
+    : `Ainda não há registros da equipe em ${nomeMes(mes)}.`;
+}
+
+$("dp_atualizar").onclick = carregarDesempenho;
+$("dp_mes").onchange = carregarDesempenho;
 
 /* ==========================
    TABS
@@ -903,9 +924,12 @@ document.querySelectorAll(".tab").forEach(btn => {
 
     $("main-diario").style.display = (alvo === "diario" ? "block" : "none");
     $("main-ocorrencia").style.display = (alvo === "ocorrencia" ? "block" : "none");
-    $("main-os").style.display = (alvo === "os" ? "block" : "none");
+    $("main-desempenho").style.display = (alvo === "desempenho" ? "block" : "none");
 
     window.scrollTo(0, 0);
+
+    // Carrega o desempenho na primeira vez que a aba é aberta
+    if (alvo === "desempenho" && !desempenhoCarregado) carregarDesempenho();
   };
 });
 
