@@ -1,39 +1,66 @@
-const CACHE_NAME = 'fiscalizacao-v1';
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/logo.png',
-  '/manifest.webmanifest'
+/* =====================================================
+   SERVICE WORKER – Fiscalização
+   Estratégia: REDE PRIMEIRO.
+   - Com internet: sempre busca a versão mais nova do app no Netlify.
+   - Sem internet: abre a última versão guardada no aparelho.
+   Assim, cada nova publicação chega aos fiscais sozinha.
+===================================================== */
+
+const VERSAO = "fiscalizacao-2026-11-25";
+
+const ARQUIVOS = [
+  "/",
+  "/index.html",
+  "/logo.png",
+  "/manifest.webmanifest"
 ];
 
-// Instalação: cacheia os arquivos principais
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-  );
+// Instala e já assume o controle, sem esperar fechar o app
+self.addEventListener("install", event => {
   self.skipWaiting();
-});
-
-// Ativação: remove caches antigos se mudar a versão
-self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
+    caches.open(VERSAO).then(cache =>
+      // Se algum arquivo não existir, não impede a instalação
+      Promise.all(ARQUIVOS.map(url => cache.add(url).catch(() => {})))
     )
   );
-  self.clients.claim();
 });
 
-// Intercepta requisições e tenta responder do cache
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      // Se tiver no cache, devolve; senão, vai pra rede
-      return response || fetch(event.request);
-    })
-  );
+// Apaga caches de versões antigas e assume as abas abertas
+self.addEventListener("activate", event => {
+  event.waitUntil((async () => {
+    const nomes = await caches.keys();
+    await Promise.all(nomes.filter(n => n !== VERSAO).map(n => caches.delete(n)));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener("fetch", event => {
+  const req = event.request;
+
+  // Só cuida de GET do próprio site.
+  // Apps Script (salvar/ler planilha) e CDNs vão direto para a rede.
+  if (req.method !== "GET") return;
+  if (new URL(req.url).origin !== self.location.origin) return;
+
+  event.respondWith((async () => {
+    try {
+      const resp = await fetch(req);
+      if (resp && resp.ok) {
+        const cache = await caches.open(VERSAO);
+        cache.put(req, resp.clone());
+      }
+      return resp;
+    } catch (err) {
+      // Sem internet: usa o que está guardado
+      const guardado = await caches.match(req, { ignoreSearch: true });
+      if (guardado) return guardado;
+
+      if (req.mode === "navigate") {
+        const pagina = (await caches.match("/index.html")) || (await caches.match("/"));
+        if (pagina) return pagina;
+      }
+      throw err;
+    }
+  })());
 });
