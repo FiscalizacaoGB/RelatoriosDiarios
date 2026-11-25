@@ -1142,7 +1142,39 @@ if (saved && savedPin) {
 ========================== */
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
+  const jaTinhaVersao = !!navigator.serviceWorker.controller;
+
+  // updateViaCache "none": o navegador sempre confere se o sw.js mudou
+  navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" })
+    .then(reg => {
+      reg.update();
+      // Confere de novo sempre que o fiscal volta para o app
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") reg.update();
+      });
+    })
+    .catch(() => {});
+
+  // Quando uma versão nova assume, recarrega o app (se for seguro)
+  let recarregando = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!jaTinhaVersao || recarregando) return;
+
+    const ocorrenciaEmAndamento =
+      $("oc_texto").value.trim() !== "" ||
+      $("oc_fotos").files.length > 0 ||
+      $("print-view").style.display === "block";
+
+    if (ocorrenciaEmAndamento) {
+      // Não recarrega para não perder o que está sendo digitado
+      toast("Nova versão do app disponível. Ela entra na próxima vez que você abrir o app.");
+      return;
+    }
+
+    // As linhas do Relatório Diário ficam guardadas no aparelho, então recarregar é seguro
+    recarregando = true;
+    window.location.reload();
+  });
 }
 </script>
 
